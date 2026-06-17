@@ -85,8 +85,9 @@ Les routes publiques s'appuient sur `src/backend/response/` :
   pure, couverte par un test qui échoue si l'`id` interne apparaît dans le DTO sérialisé.
 - **Soumission write-only** : `POST /api/public/forms/[publicId]/responses` valide l'entrée via
   `buildSubmitResponseSchema(form.questions)` (forme + règles par type + questions obligatoires +
-  rejet des `questionId` inconnus) avant insertion ; il ne renvoie aucune réponse d'autrui (juste
-  l'`id`/horodatage de la soumission créée, `201`). Une entrée invalide → **400**.
+  rejet des `questionId` inconnus + rejet des `optionId` n'appartenant pas à la question ciblée)
+  avant insertion ; il ne renvoie aucune réponse d'autrui (juste l'`id`/horodatage de la soumission
+  créée, `201`). Une entrée invalide → **400**.
 - **Lecture réservée à l'admin** : `GET /api/admin/forms/[id]/responses` (par `id` interne) est sous
   la garde admin du middleware (`/api/admin/*`) ; le public n'a aucune route de lecture des réponses.
 

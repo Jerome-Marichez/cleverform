@@ -141,13 +141,21 @@ export function validateAnswerForType(
 
 /**
  * Fabrique un schéma Zod paramétré par la **définition** des questions, pour
- * valider une soumission complète en une passe (forme + règles par type).
- * Pratique côté backend une fois le `Form` chargé.
+ * valider une soumission complète en une passe (forme + règles par type +
+ * appartenance des options). Pratique côté backend une fois le `Form` chargé.
  *
- * @param questions définitions { id, type, required } des questions du `Form`.
+ * @param questions définitions { id, type, required, options } des questions du
+ *   `Form`. Les `options` (identifiants) servent à vérifier que les choix soumis
+ *   appartiennent bien à la question : sans ce contrôle, un client pourrait
+ *   connecter des `Option` d'un autre questionnaire (contamination des agrégats).
  */
 export function buildSubmitResponseSchema(
-  questions: ReadonlyArray<{ id: string; type: QuestionType; required: boolean }>,
+  questions: ReadonlyArray<{
+    id: string;
+    type: QuestionType;
+    required: boolean;
+    options?: ReadonlyArray<{ id: string }>;
+  }>,
 ) {
   const byId = new Map(questions.map((q) => [q.id, q]));
 
@@ -171,6 +179,25 @@ export function buildSubmitResponseSchema(
           path: ["answers", index],
           message: result.error,
         });
+      }
+
+      // Toute option soumise doit appartenir à la question référencée. On le
+      // vérifie pour TOUTE réponse portant des options (pas seulement les types à
+      // choix) : la persistance connecte les `Option` sans filtrer sur le type,
+      // donc une option étrangère — d'une autre question ou d'un autre `Form` —
+      // serait rattachée si on ne la rejetait pas ici.
+      if (answer.selectedOptionIds && answer.selectedOptionIds.length > 0) {
+        const allowed = new Set((question.options ?? []).map((option) => option.id));
+        const hasForeignOption = answer.selectedOptionIds.some(
+          (optionId) => !allowed.has(optionId),
+        );
+        if (hasForeignOption) {
+          ctx.addIssue({
+            code: "custom",
+            path: ["answers", index, "selectedOptionIds"],
+            message: "Une option sélectionnée n'appartient pas à cette question.",
+          });
+        }
       }
     });
 
