@@ -5,31 +5,59 @@ Principe directeur : la séparation **admin / public** est portée par la **couc
 (`Form`, `Question`, `Option`, `Response`, `Answer`). Voir [`data-model.md`](./data-model.md)
 et [`architecture.md`](./architecture.md).
 
-## 1. Authentification admin — « administrateur unique »
+## 1. Authentification admin — « administrateur unique » _(implémenté)_
 
 Pas de table `User`, pas de `Form.ownerId`. Un seul administrateur :
 
 - Identifiants en **variables d'environnement** : `ADMIN_PASSWORD`, `SESSION_SECRET`
-  (voir [`.env.example`](../.env.example)). Jamais commitées.
-- Connexion : comparaison du mot de passe **en temps constant** (anti timing-attack).
+  (voir [`.env.example`](../.env.example)). Jamais commitées ; le code **échoue clairement**
+  si elles sont absentes.
+- Connexion : comparaison du mot de passe **en temps constant** (anti timing-attack), sur les
+  empreintes HMAC des valeurs pour que la durée ne dépende ni de la longueur ni du contenu attendu.
   En production, stocker de préférence un **hash** (argon2/bcrypt) plutôt que le mot de passe en clair.
-- Session matérialisée par un **cookie signé** (HMAC avec `SESSION_SECRET`), avec les attributs :
-  `httpOnly` (inaccessible au JS), `Secure` (HTTPS uniquement), `SameSite=Lax`, expiration bornée.
-- Logique isolée dans `src/backend/auth/adminSession.ts` (création + vérification du jeton).
+- Session matérialisée par un **jeton signé HMAC-SHA256** (clé `SESSION_SECRET`) déposé dans un
+  **cookie** nommé `cc_admin_session`, au format `payloadBase64Url.signatureBase64Url`. La charge
+  utile porte le sujet (`sub: "admin"`) et une **expiration** (`exp`, 7 jours par défaut).
+  Attributs du cookie : `httpOnly` (inaccessible au JS), `Secure` en production (HTTPS uniquement),
+  `SameSite=Lax`, `path=/`, `maxAge` borné.
+- **Web Crypto API** (`crypto.subtle`) plutôt que `node:crypto` : disponible à la fois dans le
+  runtime Node (routes) et dans celui du **middleware** Next.js — d'où des helpers **asynchrones**.
+- Logique isolée dans [`src/backend/auth/adminSession.ts`](../src/backend/auth/adminSession.ts) :
+  `createSessionToken()`, `verifySessionToken()`, `validateAdminPassword()` + helpers de cookie.
+
+Routes d'authentification (sous `src/app/api/auth/`, hors `/api/admin/*` donc non gardées) :
+
+| Route | Méthode | Effet |
+|-------|---------|-------|
+| `/api/auth/login`  | `POST` | Valide `loginSchema`, vérifie le mot de passe, pose le cookie. `200` / `401` / `400`. |
+| `/api/auth/logout` | `POST` | Efface le cookie (`maxAge=0`). `200` (idempotent). |
+
+La page de connexion [`/login`](../src/app/login/page.tsx) (MUI, React Hook Form + `zodResolver(loginSchema)`)
+poste vers `/api/auth/login`, gère chargement/erreur et redirige vers la cible d'origine (`?from=`,
+**uniquement si interne** — anti open redirect) ou `/admin`.
 
 > Arbitrage : l'admin unique suffit au périmètre du cas pratique sans sur-ingénierie. L'évolution
 > vers une vraie gestion de comptes (table `User`, rôles, `Form.ownerId`) ne touche pas au cœur du modèle.
 
-## 2. Garde de routing (`middleware.ts`)
+## 2. Garde de routing (`middleware.ts`) _(implémenté)_
 
-Le middleware Next.js exige une session admin valide sur :
+Le middleware Next.js ([`src/middleware.ts`](../src/middleware.ts), `matcher` ci-dessous) exige une
+session admin valide sur :
 
 - `/admin/*` — Form Builder, Response Viewer, génération IA (UI).
 - `/api/admin/*` — Route Handlers admin (génération IA, opérations builder).
 
-Sans session valide → redirection vers la page de connexion (UI) ou `401` (API). La défense est
-**aussi rejouée côté backend/Server Action** (defense-in-depth) : on ne se repose pas uniquement
-sur le middleware.
+```ts
+export const config = { matcher: ["/admin/:path*", "/api/admin/:path*"] };
+```
+
+Sans session valide :
+
+- `/api/admin/*` → **`401` JSON** (`{ error }`) — appel programmatique, pas de redirection.
+- `/admin/*` → **redirection `302`** vers `/login?from=<chemin demandé>`.
+
+La défense doit être **aussi rejouée côté backend/Server Action** (defense-in-depth) : on ne se
+repose pas uniquement sur le middleware.
 
 ## 3. Surface publique minimale
 
