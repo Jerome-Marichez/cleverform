@@ -85,6 +85,11 @@ Le **domaine Réponse** (`src/backend/response/`) sert un questionnaire publié 
 admin (`GET /api/admin/forms/[id]/responses`). Le mapping DTO et l'agrégation sont une logique
 **pure** (testée sans base) ; un `Form` non publié renvoie 404 et l'`id` interne n'est jamais exposé.
 
+La **page de remplissage** (`src/app/f/[publicId]`, Server Component) charge le DTO public côté
+serveur puis délègue à `ResponderForm` (React Hook Form + Zod, validation client par le **même**
+schéma que le backend). Soumission réussie → écran de remerciement ; questionnaire indisponible →
+page 404 dédiée. Voir [`docs/design.md`](./docs/design.md) (section _Form Responder_).
+
 Côté admin, le **Response Viewer** (`/admin/forms/[id]/responses`, Server Component) charge cet
 agrégat et le visualise par question — barres horizontales pour les choix, note moyenne pour les
 notes, échantillon de valeurs pour les champs libres — avec des primitives MUI uniquement (sans
