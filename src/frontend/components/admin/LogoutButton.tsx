@@ -6,8 +6,8 @@ import Button from "@mui/material/Button";
 import LogoutIcon from "@mui/icons-material/Logout";
 
 // Bouton de déconnexion de l'espace administrateur. POST `/api/auth/logout`
-// (efface le cookie de session) puis redirige vers `/login`. Affiche un état
-// de chargement pendant la requête. Theme-aware via le bouton MUI.
+// (efface le cookie de session) puis redirige vers l'accueil public (`/`).
+// Affiche un état de chargement pendant la requête. Theme-aware via le bouton MUI.
 export function LogoutButton() {
   const router = useRouter();
   const [pending, setPending] = React.useState(false);
@@ -18,9 +18,9 @@ export function LogoutButton() {
       await fetch("/api/auth/logout", { method: "POST" });
     } catch {
       // La déconnexion reste idempotente : même en cas d'erreur réseau, on
-      // renvoie l'utilisateur vers la page de connexion.
+      // renvoie l'utilisateur vers l'accueil public.
     } finally {
-      router.replace("/login");
+      router.replace("/");
       router.refresh();
     }
   };

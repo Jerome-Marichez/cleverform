@@ -12,15 +12,17 @@ export interface LogoProps {
   size?: number;
 }
 
-// Marque CleverForm. Le pictogramme (coche dans un carré arrondi) et le nom
-// utilisent les couleurs du **thème** (variables CSS MUI) : ils s'adaptent donc
-// automatiquement au mode clair / sombre. Vert dominant.
+// Marque CleverForm. Le carré du pictogramme reprend le **vert du thème** (donc
+// éclairci en mode sombre), mais la coche reste **blanche** dans les deux modes :
+// la marque se lit ainsi toujours « blanc + vert ». Sans cela, en thème sombre le
+// vert s'éclaircit et la couleur de contraste calculée bascule au noir (coche
+// noire au lieu de blanche). Le nom, lui, suit le thème (« Clever » s'adapte,
+// « Form » reste vert).
 export function Logo({ variant = "full", size = 32 }: LogoProps) {
   const theme = useTheme();
   const brand = theme.vars?.palette.primary.main ?? theme.palette.primary.main;
   const onBrand =
-    theme.vars?.palette.primary.contrastText ??
-    theme.palette.primary.contrastText;
+    theme.vars?.palette.common.white ?? theme.palette.common.white;
 
   const mark = (
     <Box

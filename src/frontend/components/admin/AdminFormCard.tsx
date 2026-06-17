@@ -41,6 +41,7 @@ export function AdminFormCard({
         questionCount={questionCount}
         updatedAt={updatedAt}
         onClick={() => router.push(`/admin/forms/${id}/edit`)}
+        reserveActionSlot
       />
       <Box sx={{ position: "absolute", top: 8, right: 8 }}>
         <FormCardActions
