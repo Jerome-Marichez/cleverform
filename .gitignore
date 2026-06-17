@@ -38,6 +38,9 @@ dist/
 build/
 out/
 
+# Storybook (build statique)
+storybook-static/
+
 # Déploiement
 .vercel
 
