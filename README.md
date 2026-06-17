@@ -95,6 +95,19 @@ agrégat et le visualise par question — barres horizontales pour les choix, no
 notes, échantillon de valeurs pour les champs libres — avec des primitives MUI uniquement (sans
 bibliothèque de graphiques). Détail dans [`docs/design.md`](./docs/design.md).
 
+L'**assistance par IA** (Claude Haiku 4.5, réservée à l'admin) est exposée par deux routes sous
+`/api/admin/ai` : `POST /generate` (`{ prompt }`) génère un questionnaire complet à partir d'un sujet
+libre, et `POST /proofread` (`{ text }`) corrige l'orthographe/grammaire d'un libellé. La logique
+d'**extraction et de validation** de la sortie du modèle est isolée dans une couche **pure**
+(`src/backend/ai/aiMapper.ts`) — la réponse JSON est tolérante aux blocs Markdown, validée par
+`generatedFormSchema`, puis mappée vers l'entrée de création (un seul retry si le format est invalide)
+— ce qui la rend **testable sans clé API ni réseau** (l'appel réseau reste isolé dans `aiClient.ts`).
+Côté UI, le dashboard propose un bouton **« Générer par IA »** (boîte de dialogue de prompt avec
+exemples, puis redirection vers l'éditeur du questionnaire créé) et le Builder une action
+**« Corriger l'orthographe »** sur chaque libellé de question. La clé `ANTHROPIC_API_KEY` reste
+serveur, jamais exposée au client. Voir [`docs/architecture.md`](./docs/architecture.md) et
+[`docs/security.md`](./docs/security.md).
+
 ### Accès & sécurité
 
 Le **Form Builder**, le **Response Viewer** et la **génération IA** sont réservés à un

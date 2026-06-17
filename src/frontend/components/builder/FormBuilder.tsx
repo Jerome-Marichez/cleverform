@@ -35,6 +35,7 @@ import {
   useFormBuilder,
   type FormBuilderInitialData,
 } from "@/frontend/hooks/useFormBuilder";
+import { useAiAssist } from "@/frontend/hooks/useAiAssist";
 import { QuestionTypePalette } from "./QuestionTypePalette";
 import { QuestionEditorItem } from "./QuestionEditorItem";
 
@@ -53,13 +54,18 @@ interface Toast {
 // Form Builder : éditeur complet d'un questionnaire (titre, description, palette
 // de types, liste de questions réordonnables en glisser-déposer, options par
 // question à choix). Enregistre via PATCH `/api/admin/forms/[id]` et publie via
-// la route de publication. Gère les états de chargement / erreur (StatusSnackbar).
+// la route de publication. Propose en complément une correction orthographique
+// par IA sur chaque libellé de question. Gère les états de chargement / erreur
+// (StatusSnackbar).
 export function FormBuilder({ formId, status, initialData }: FormBuilderProps) {
   const router = useRouter();
   const builder = useFormBuilder(initialData);
+  const ai = useAiAssist();
   const [currentStatus, setCurrentStatus] = React.useState<FormStatus>(status);
   const [saving, setSaving] = React.useState(false);
   const [publishing, setPublishing] = React.useState(false);
+  // Identifiant local de la question dont le libellé est en cours de correction.
+  const [proofreadingId, setProofreadingId] = React.useState<string | null>(null);
   const [toast, setToast] = React.useState<Toast | null>(null);
 
   const busy = saving || publishing;
@@ -82,6 +88,32 @@ export function FormBuilder({ formId, status, initialData }: FormBuilderProps) {
       builder.reorderQuestions(from, to);
     }
   };
+
+  // Corrige le libellé d'une question via IA, puis remplace sa valeur.
+  async function proofreadQuestion(localId: string, label: string) {
+    const trimmed = label.trim();
+    if (!trimmed) {
+      return;
+    }
+    setProofreadingId(localId);
+    try {
+      const corrected = await ai.proofread(trimmed);
+      builder.updateQuestionLabel(localId, corrected);
+      if (corrected === trimmed) {
+        setToast({ message: "Aucune correction nécessaire.", severity: "info" });
+      } else {
+        setToast({ message: "Libellé corrigé.", severity: "success" });
+      }
+    } catch (error) {
+      setToast({
+        message:
+          error instanceof Error ? error.message : "La correction a échoué.",
+        severity: "error",
+      });
+    } finally {
+      setProofreadingId(null);
+    }
+  }
 
   // Persiste le brouillon (PATCH). Renvoie true en cas de succès.
   async function persist(): Promise<boolean> {
@@ -268,6 +300,10 @@ export function FormBuilder({ formId, status, initialData }: FormBuilderProps) {
                     onReorderOptions={(from, to) =>
                       builder.reorderOptions(question.localId, from, to)
                     }
+                    onProofreadLabel={() =>
+                      proofreadQuestion(question.localId, question.label)
+                    }
+                    proofreading={proofreadingId === question.localId}
                     disabled={busy}
                   />
                 ))}
