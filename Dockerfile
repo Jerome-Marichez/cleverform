@@ -12,6 +12,7 @@ RUN npm ci
 FROM node:22-alpine AS builder
 WORKDIR /app
 RUN apk add --no-cache openssl
+ENV DOCKER_BUILD=1
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 RUN npx prisma generate && npm run build
