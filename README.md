@@ -46,7 +46,7 @@ src/
   middleware.ts # garde d'accès admin (/admin/* et /api/admin/*)
   app/          # Next.js App Router — points d'entrée : pages (front) + routes API (back)
     page.tsx      # page d'accueil PUBLIQUE : présentation + accès à l'espace admin
-    (admin)/      # espace ADMIN protégé : Form Builder, Response Viewer, génération IA
+    admin/        # espace ADMIN protégé — layout (coquille + déconnexion) + tableau de bord (liste des questionnaires) ; Form Builder, Response Viewer, génération IA
     f/[publicId]/ # Form Responder PUBLIC (jeton opaque, formulaires publiés uniquement)
     api/
       admin/    #   routes BACKEND protégées : génération IA, opérations builder, lecture des réponses
@@ -67,6 +67,11 @@ publics (`PublicForm`, sans `id` interne). Détail et règles par type : [`docs/
 L'**administration des questionnaires** est exposée par les routes `/api/admin/forms`
 (CRUD + publication/clôture), adossées à la couche `backend/form` (service / repository / règles
 pures). Détail des routes et du découpage : [`docs/architecture.md`](./docs/architecture.md).
+
+Le **tableau de bord admin** (`/admin`) — coquille commune (en-tête + déconnexion) et liste des
+questionnaires (création, publication / clôture, suppression) — lit les données côté serveur via
+`listForms()` et délègue les interactions à des composants clients dédiés
+(`src/frontend/components/admin/`). Parcours et composants : [`docs/design.md`](./docs/design.md).
 
 Le **Form Builder** (`/admin/forms/[id]/edit`) est l'éditeur visuel de questionnaire :
 édition du titre/description, palette des 8 types de questions, réordonnancement **drag & drop**
