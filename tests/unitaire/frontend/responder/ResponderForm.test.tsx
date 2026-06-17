@@ -60,6 +60,13 @@ function mockFetch(response: FakeResponse): jest.Mock {
   return fetchMock;
 }
 
+/** Coche la case de consentement RGPD (prérequis à l'envoi). */
+function giveConsent() {
+  fireEvent.click(
+    screen.getByRole("checkbox", { name: /je consens au traitement/i }),
+  );
+}
+
 describe("ResponderForm (unitaire)", () => {
   afterEach(() => {
     global.fetch = originalFetch;
@@ -86,6 +93,9 @@ describe("ResponderForm (unitaire)", () => {
     const fetchMock = mockFetch(fakeResponse(201, { id: "r1" }));
     renderWithTheme(<ResponderForm form={fixtureForm} />);
 
+    // On consent (sinon le verrou RGPD bloque avant la validation des champs),
+    // puis on envoie sans renseigner la question requise.
+    giveConsent();
     fireEvent.click(
       screen.getByRole("button", { name: /envoyer mes réponses/i }),
     );
@@ -107,6 +117,7 @@ describe("ResponderForm (unitaire)", () => {
     fireEvent.change(screen.getByRole("textbox"), {
       target: { value: "Alice" },
     });
+    giveConsent();
     fireEvent.click(
       screen.getByRole("button", { name: /envoyer mes réponses/i }),
     );
@@ -141,11 +152,12 @@ describe("ResponderForm (unitaire)", () => {
 
     renderWithTheme(<ResponderForm form={fixtureForm} />);
 
-    // On renseigne le champ requis pour passer la validation client et atteindre
-    // le serveur (simulé) qui renvoie une erreur.
+    // On renseigne le champ requis et on consent pour passer la validation
+    // client et atteindre le serveur (simulé) qui renvoie une erreur.
     fireEvent.change(screen.getByRole("textbox"), {
       target: { value: "Alice" },
     });
+    giveConsent();
     fireEvent.click(
       screen.getByRole("button", { name: /envoyer mes réponses/i }),
     );
@@ -156,6 +168,34 @@ describe("ResponderForm (unitaire)", () => {
       );
     });
     expect(screen.queryByText("Merci pour votre réponse !")).not.toBeInTheDocument();
+  });
+
+  it("affiche la mention de confidentialité (RGPD)", () => {
+    renderWithTheme(<ResponderForm form={fixtureForm} />);
+    expect(
+      screen.getByRole("region", { name: /confidentialité/i }),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/Jérôme Marichez/)).toBeInTheDocument();
+  });
+
+  it("bloque l'envoi sans consentement et n'appelle pas le réseau", async () => {
+    const fetchMock = mockFetch(fakeResponse(201, { id: "r1" }));
+    renderWithTheme(<ResponderForm form={fixtureForm} />);
+
+    // Champ requis renseigné mais consentement non coché.
+    fireEvent.change(screen.getByRole("textbox"), {
+      target: { value: "Alice" },
+    });
+    fireEvent.click(
+      screen.getByRole("button", { name: /envoyer mes réponses/i }),
+    );
+
+    await waitFor(() => {
+      expect(
+        screen.getByText(/vous devez accepter le traitement/i),
+      ).toBeInTheDocument();
+    });
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 });
 

@@ -37,6 +37,7 @@ Le remplissage proprement dit est délégué au Client Component `ResponderForm`
 
 - **React Hook Form + Zod** : un `AnswerInput` par question, validé côté client par le **même** schéma que le backend (`buildSubmitResponseSchema(form.questions)`) — règles par type (requis, e-mail, nombre, date, cardinalité des choix). Les erreurs s'affichent **inline** sous chaque question.
 - Chaque question est rendue par le dispatcher `QuestionField`. Le hook `useResponderForm` concentre la conversion **valeur d'affichage ⇄ `AnswerInput`** : les champs de choix manipulent des **libellés** d'options, reconvertis en **identifiants** (`selectedOptionIds`) pour le backend.
+- **Confidentialité (RGPD)** : avant le bouton d'envoi, une **mention de confidentialité** (`PrivacyNotice`) et une **case de consentement obligatoire** (base légale). Tant que la case n'est pas cochée, l'envoi est bloqué (verrou avant la validation des champs). Détails : [`security.md`](./security.md).
 - **Soumission** : `POST /api/public/forms/[publicId]/responses`. Succès → `ThankYouScreen` (écran de remerciement, le formulaire n'est pas rouvert — surface write-only). Échec → message d'erreur (les `issues` de validation serveur sont agrégées et affichées). Pendant l'envoi : barre de progression + bouton en état chargé, champs désactivés.
 - En-tête : titre et description du questionnaire ; mise en page cohérente (`AppHeader`, `PageContainer`, carte MUI), **theme-aware** (clair / sombre).
 
