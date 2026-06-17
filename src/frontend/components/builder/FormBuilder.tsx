@@ -25,6 +25,7 @@ import TextField from "@mui/material/TextField";
 import Button from "@mui/material/Button";
 import SaveIcon from "@mui/icons-material/SaveOutlined";
 import PublishIcon from "@mui/icons-material/PublishOutlined";
+import LinkIcon from "@mui/icons-material/LinkOutlined";
 import type { AlertColor } from "@mui/material/Alert";
 import type { FormStatus } from "@/shared/schemas/form";
 import { PageContainer } from "@/frontend/components/PageContainer";
@@ -36,12 +37,16 @@ import {
   type FormBuilderInitialData,
 } from "@/frontend/hooks/useFormBuilder";
 import { useAiAssist } from "@/frontend/hooks/useAiAssist";
+import { useCopyToClipboard } from "@/frontend/hooks/useCopyToClipboard";
+import { buildPublicFormUrl } from "@/frontend/lib/publicFormUrl";
 import { QuestionTypePalette } from "./QuestionTypePalette";
 import { QuestionEditorItem } from "./QuestionEditorItem";
 
 export interface FormBuilderProps {
   /** Clé interne du questionnaire (jamais exposée publiquement). */
   formId: string;
+  /** Jeton opaque d'accès public (`/f/<publicId>`), pour partager le lien. */
+  publicId: string;
   status: FormStatus;
   initialData: FormBuilderInitialData;
 }
@@ -57,10 +62,16 @@ interface Toast {
 // la route de publication. Propose en complément une correction orthographique
 // par IA sur chaque libellé de question. Gère les états de chargement / erreur
 // (StatusSnackbar).
-export function FormBuilder({ formId, status, initialData }: FormBuilderProps) {
+export function FormBuilder({
+  formId,
+  publicId,
+  status,
+  initialData,
+}: FormBuilderProps) {
   const router = useRouter();
   const builder = useFormBuilder(initialData);
   const ai = useAiAssist();
+  const { copy } = useCopyToClipboard();
   const [currentStatus, setCurrentStatus] = React.useState<FormStatus>(status);
   const [saving, setSaving] = React.useState(false);
   const [publishing, setPublishing] = React.useState(false);
@@ -195,7 +206,19 @@ export function FormBuilder({ formId, status, initialData }: FormBuilderProps) {
     }
   }
 
+  // Copie le lien public du questionnaire et confirme via un toast.
+  async function copyPublicLink() {
+    const copied = await copy(buildPublicFormUrl(publicId));
+    setToast(
+      copied
+        ? { message: "Lien copié dans le presse-papier.", severity: "success" }
+        : { message: "Copie impossible. Copiez le lien manuellement.", severity: "error" },
+    );
+  }
+
   const canPublish = currentStatus === "DRAFT";
+  // Un questionnaire publié dispose d'une page publique partageable.
+  const isPublished = currentStatus === "PUBLISHED";
 
   return (
     <PageContainer>
@@ -212,6 +235,16 @@ export function FormBuilder({ formId, status, initialData }: FormBuilderProps) {
             <FormStatusChip status={currentStatus} />
           </Stack>
           <Stack direction="row" spacing={1.5}>
+            {isPublished ? (
+              <Button
+                variant="outlined"
+                startIcon={<LinkIcon />}
+                onClick={copyPublicLink}
+                disabled={busy}
+              >
+                Copier le lien
+              </Button>
+            ) : null}
             <Button
               variant="outlined"
               startIcon={<SaveIcon />}
