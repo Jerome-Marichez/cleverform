@@ -46,7 +46,7 @@ src/
   middleware.ts # garde d'accès admin (/admin/* et /api/admin/*)
   app/          # Next.js App Router — points d'entrée : pages (front) + routes API (back)
     page.tsx      # page d'accueil PUBLIQUE : présentation + accès à l'espace admin
-    (admin)/      # espace ADMIN protégé : Form Builder, Response Viewer, génération IA
+    admin/        # espace ADMIN protégé — layout (coquille + déconnexion) + tableau de bord (liste des questionnaires) ; Form Builder, Response Viewer, génération IA
     f/[publicId]/ # Form Responder PUBLIC (jeton opaque, formulaires publiés uniquement)
     api/
       admin/    #   routes BACKEND protégées : génération IA, opérations builder, lecture des réponses
@@ -68,6 +68,17 @@ L'**administration des questionnaires** est exposée par les routes `/api/admin/
 (CRUD + publication/clôture), adossées à la couche `backend/form` (service / repository / règles
 pures). Détail des routes et du découpage : [`docs/architecture.md`](./docs/architecture.md).
 
+Le **tableau de bord admin** (`/admin`) — coquille commune (en-tête + déconnexion) et liste des
+questionnaires (création, publication / clôture, suppression) — lit les données côté serveur via
+`listForms()` et délègue les interactions à des composants clients dédiés
+(`src/frontend/components/admin/`). Parcours et composants : [`docs/design.md`](./docs/design.md).
+
+Le **Form Builder** (`/admin/forms/[id]/edit`) est l'éditeur visuel de questionnaire :
+édition du titre/description, palette des 8 types de questions, réordonnancement **drag & drop**
+(questions et options) via `@dnd-kit`, et éditeur d'options pour les types à choix. La logique
+d'édition est isolée dans le hook **pur et testable** `useFormBuilder`. Détail UX :
+[`docs/design.md`](./docs/design.md).
+
 Le **domaine Réponse** (`src/backend/response/`) sert un questionnaire publié au Responder
 (`GET /api/public/forms/[publicId]`), enregistre les soumissions validées
 (`POST /api/public/forms/[publicId]/responses`, write-only) et expose l'agrégat au Response Viewer
@@ -78,6 +89,11 @@ La **page de remplissage** (`src/app/f/[publicId]`, Server Component) charge le 
 serveur puis délègue à `ResponderForm` (React Hook Form + Zod, validation client par le **même**
 schéma que le backend). Soumission réussie → écran de remerciement ; questionnaire indisponible →
 page 404 dédiée. Voir [`docs/design.md`](./docs/design.md) (section _Form Responder_).
+
+Côté admin, le **Response Viewer** (`/admin/forms/[id]/responses`, Server Component) charge cet
+agrégat et le visualise par question — barres horizontales pour les choix, note moyenne pour les
+notes, échantillon de valeurs pour les champs libres — avec des primitives MUI uniquement (sans
+bibliothèque de graphiques). Détail dans [`docs/design.md`](./docs/design.md).
 
 ### Accès & sécurité
 
