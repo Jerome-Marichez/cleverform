@@ -1,0 +1,19 @@
+name: CI main — Tests système (back)
+
+# Check de mise en production (PR `dev` -> `main`) : tests système back (Cypress).
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  systeme:
+    name: Tests système (back)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: cypress-io/github-action@v6
+        with:
+          build: npx prisma generate && npm run build
+          start: npm run start
+          wait-on: http://localhost:3000
+          spec: tests/systeme/**/*.cy.ts

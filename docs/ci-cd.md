@@ -5,10 +5,18 @@ PR vers `dev` ; les checks longs sont réservés à la mise en production (PR ve
 
 ## Workflows GitHub Actions
 
-| Workflow | Déclencheur | Jobs |
-|----------|-------------|------|
-| `.github/workflows/ci-dev.yml` | **PR → `dev`** | `Lint & types` ; `Tests unitaires & intégration` (Cypress) |
-| `.github/workflows/ci-main.yml` | **PR → `main`** | `Build local (next build)` ; `Docker — build/run/disponibilité` ; `Tests e2e (front)` ; `Tests système (back)` |
+Un **fichier par check** (un workflow = un job), pour rester lisible. Le modèle reste
+**à deux niveaux** via le déclencheur : préfixe `ci-dev-*` (PR → `dev`, rapide) et
+`ci-main-*` (PR → `main`, long).
+
+| Workflow | Déclencheur | Job |
+|----------|-------------|-----|
+| `.github/workflows/ci-dev-lint.yml` | **PR → `dev`** | `Lint & types` |
+| `.github/workflows/ci-dev-tests.yml` | **PR → `dev`** | `Tests unitaires & intégration` (Cypress) |
+| `.github/workflows/ci-main-build.yml` | **PR → `main`** | `Build local (next build)` |
+| `.github/workflows/ci-main-docker.yml` | **PR → `main`** | `Docker — build/run/disponibilité` |
+| `.github/workflows/ci-main-e2e.yml` | **PR → `main`** | `Tests e2e (front)` |
+| `.github/workflows/ci-main-system.yml` | **PR → `main`** | `Tests système (back)` |
 
 ### PR → `dev` (rapide)
 
@@ -44,7 +52,7 @@ PR vers `dev` ; les checks longs sont réservés à la mise en production (PR ve
 
 | Étape | Outil |
 |-------|-------|
-| CI | **GitHub Actions** (2 workflows) |
+| CI | **GitHub Actions** (un workflow par check) |
 | Conteneurisation | **Docker** (portabilité, healthcheck) |
 | Déploiement | **Vercel** |
 | Base de données | **PostgreSQL** (Neon) |

@@ -1,0 +1,19 @@
+name: CI main — Tests e2e (front)
+
+# Check de mise en production (PR `dev` -> `main`) : tests end-to-end front (Cypress).
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  e2e:
+    name: Tests e2e (front)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: cypress-io/github-action@v6
+        with:
+          build: npx prisma generate && npm run build
+          start: npm run start
+          wait-on: http://localhost:3000
+          spec: tests/e2e/**/*.cy.ts
