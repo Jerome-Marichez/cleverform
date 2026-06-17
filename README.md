@@ -120,7 +120,7 @@ La documentation détaillée vit dans le dossier [`docs/`](./docs) :
 - [Storybook](./docs/storybook.md) — visualisation des composants, thème clair/sombre, conventions des stories.
 - [Modèle de données](./docs/data-model.md) — entités (`Form`, `Question`, `Response`, `Answer`) et relations.
 - [Sécurité & accès](./docs/security.md) — auth admin unique, cloisonnement admin/public, verrou IA, validation.
-- [Tests](./docs/testing.md) — stratégie unitaires / intégration / e2e-système.
+- [Tests](./docs/testing.md) — stratégie unitaires / intégration / e2e-système et couverture des composants.
 - [CI / CD](./docs/ci-cd.md) — CI à deux niveaux (dev rapide / main long) et déploiement.
 - [Docker](./docs/docker.md) — portabilité (anti vendor lock-in), build/run/disponibilité.
 - [Outillage (Make)](./docs/tooling.md) — interface de commandes agnostique.
