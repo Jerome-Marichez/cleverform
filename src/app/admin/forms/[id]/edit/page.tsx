@@ -30,6 +30,7 @@ export default async function EditFormPage({ params }: EditFormPageProps) {
   return (
     <FormBuilder
       formId={form.id}
+      publicId={form.publicId}
       status={form.status}
       initialData={{
         title: form.title,

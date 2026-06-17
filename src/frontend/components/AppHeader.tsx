@@ -11,14 +11,19 @@ import { ColorModeToggle } from "./ColorModeToggle";
 export interface AppHeaderProps {
   /** Actions affichées à droite (avant le sélecteur de thème). */
   actions?: React.ReactNode;
-  /** Si fourni, la marque devient un lien interne vers cette destination. */
+  /**
+   * Destination du lien de la marque. Par défaut l'accueil public (`/`) ;
+   * l'espace admin la surcharge vers `/admin`.
+   */
   logoHref?: string;
 }
 
 // Barre supérieure de l'application : marque à gauche, actions optionnelles et
-// bascule de thème à droite. S'adapte au mode clair / sombre. La marque peut
-// devenir un lien (ex. retour au tableau de bord admin) via `logoHref`.
-export function AppHeader({ actions, logoHref }: AppHeaderProps) {
+// bascule de thème à droite. S'adapte au mode clair / sombre. La marque est
+// toujours un lien : par défaut vers l'accueil, surchargeable via `logoHref`.
+export function AppHeader({ actions, logoHref = "/" }: AppHeaderProps) {
+  // Libellé d'accessibilité adapté à la destination de la marque.
+  const logoLabel = logoHref === "/admin" ? "Accueil du tableau de bord" : "Accueil";
   return (
     <AppBar
       position="static"
@@ -32,18 +37,14 @@ export function AppHeader({ actions, logoHref }: AppHeaderProps) {
     >
       <Toolbar sx={{ gap: 1.5 }}>
         <Box sx={{ flexGrow: 1, display: "flex", alignItems: "center" }}>
-          {logoHref ? (
-            <Box
-              component={NextLink}
-              href={logoHref}
-              aria-label="Accueil du tableau de bord"
-              sx={{ display: "inline-flex", textDecoration: "none" }}
-            >
-              <Logo />
-            </Box>
-          ) : (
+          <Box
+            component={NextLink}
+            href={logoHref}
+            aria-label={logoLabel}
+            sx={{ display: "inline-flex", textDecoration: "none" }}
+          >
             <Logo />
-          )}
+          </Box>
         </Box>
         {actions}
         <ColorModeToggle />

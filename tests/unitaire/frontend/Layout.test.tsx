@@ -60,6 +60,18 @@ describe("AppHeader (unitaire)", () => {
     // Sans action fournie, le seul bouton est la bascule de thème.
     expect(screen.getByRole("button")).toBeInTheDocument();
   });
+
+  it("la marque est un lien vers l'accueil par défaut", () => {
+    renderWithTheme(<AppHeader />);
+    const link = screen.getByRole("link", { name: "Accueil" });
+    expect(link).toHaveAttribute("href", "/");
+  });
+
+  it("surcharge la destination de la marque via logoHref", () => {
+    renderWithTheme(<AppHeader logoHref="/admin" />);
+    const link = screen.getByRole("link", { name: "Accueil du tableau de bord" });
+    expect(link).toHaveAttribute("href", "/admin");
+  });
 });
 
 describe("PageContainer (unitaire)", () => {
