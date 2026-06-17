@@ -21,8 +21,20 @@
 - Intégration **App Router** via `@mui/material-nextjs` (cache Emotion + SSR) ; icônes via `@mui/icons-material`.
 - **React Hook Form + Zod** pour les formulaires (champs MUI pilotés par `Controller` ; validation et erreurs inline).
 - **dnd-kit** pour le réordonnancement des questions dans le Builder.
+- **Storybook** comme surface de **visualisation / documentation** des composants (rendu, états, déclinaison clair/sombre) — voir [`storybook.md`](./storybook.md).
 
-Composants en **PascalCase** (`FormBuilder.tsx`, `QuestionCard.tsx`), hooks en **camelCase** (`useFormBuilder.ts`).
+Composants en **PascalCase** (`FormBuilder.tsx`, `QuestionCard.tsx`), hooks en **camelCase** (`useFormBuilder.ts`). Les composants vivent sous `src/frontend/components/`.
+
+## Thème clair / sombre
+
+- **Couleur dominante : le vert** de la marque, décliné en clair **et** en sombre.
+- Le thème (`src/frontend/theme.ts`) utilise les **variables CSS** de MUI avec un **sélecteur de classe**
+  (`colorSchemeSelector: "class"`) : la bascule peut se faire en JS.
+- **Détection système par défaut** : `ThemeProvider` (`defaultMode="system"`) suit la préférence OS
+  (`prefers-color-scheme`) ; `InitColorSchemeScript` (dans le layout) applique le bon mode **avant
+  l'hydratation** pour éviter tout flash (FOUC).
+- L'utilisateur peut basculer **clair / sombre / système** via le composant `ColorModeToggle` ; le
+  choix est mémorisé. Le mode clair/sombre s'applique à **tout** le système (admin **et** public).
 
 ## États de l'interface (systématiques)
 

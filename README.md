@@ -25,7 +25,8 @@ Application web fullstack permettant de :
 | ORM | **Prisma 7** (driver adapter `@prisma/adapter-pg`) |
 | Conteneurisation | **Docker** (portabilité / compatibilité ; livraison via Vercel) |
 | Commandes | **Make** (interface agnostique) |
-| UI | **MUI (Material UI)** |
+| UI | **MUI (Material UI)** — thème clair/sombre, détection système |
+| Visualisation des composants | **Storybook** (rendu/doc des composants) |
 | Formulaires & validation | **React Hook Form + Zod** |
 | Drag & drop (builder) | **dnd-kit** |
 | IA | **Claude Haiku 4.5** (`@anthropic-ai/sdk`), sortie structurée validée Zod |
@@ -81,6 +82,7 @@ make dev            # développement local
 make build          # build de production
 make lint typecheck # qualité
 make docker-up      # app + Postgres en local (Docker, compatibilité)
+make storybook      # visualisation des composants (Storybook, port 6006)
 make help           # liste toutes les cibles
 ```
 
@@ -93,6 +95,7 @@ La documentation détaillée vit dans le dossier [`docs/`](./docs) :
 
 - [Architecture](./docs/architecture.md) — stack, structure, choix techniques et arbitrages.
 - [Design & UX](./docs/design.md) — parcours utilisateur, composants, états de l'interface.
+- [Storybook](./docs/storybook.md) — visualisation des composants, thème clair/sombre, conventions des stories.
 - [Modèle de données](./docs/data-model.md) — entités (`Form`, `Question`, `Response`, `Answer`) et relations.
 - [Sécurité & accès](./docs/security.md) — auth admin unique, cloisonnement admin/public, verrou IA, validation.
 - [Tests](./docs/testing.md) — stratégie unitaires / intégration / e2e-système.

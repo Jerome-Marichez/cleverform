@@ -8,6 +8,7 @@ PORT  ?= 3000
 
 .PHONY: help install ci-install dev build start lint typecheck \
         test-unit test-integration test-e2e test-system \
+        storybook build-storybook \
         prisma-generate db-migrate docker-build docker-run docker-up docker-down
 
 help: ## Affiche cette aide
@@ -45,6 +46,12 @@ test-e2e: ## Tests e2e — front (Cypress) : build requis (make build), serveur 
 
 test-system: ## Tests système — back (Cypress) : build requis (make build), serveur lancé auto
 	npx start-server-and-test "npm run start" http://localhost:3000 "npm run test:system"
+
+storybook: ## Lance Storybook (visualisation des composants, port 6006)
+	npm run storybook
+
+build-storybook: ## Build statique de Storybook
+	npm run build-storybook
 
 prisma-generate: ## Génère le client Prisma
 	npm run prisma:generate
