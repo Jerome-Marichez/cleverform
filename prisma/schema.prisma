@@ -1,0 +1,84 @@
+// Modèle de données CleverConnect — voir docs/data-model.md
+//
+// Frontière de sécurité (voir docs/security.md) :
+//  - `Form.id` est la clé interne : elle ne doit JAMAIS apparaître dans une URL publique.
+//  - `Form.publicId` est le seul identifiant exposé publiquement (/f/[publicId]).
+//  - Le public ne lit que des Form `PUBLISHED` ; il écrit (crée) des Response/Answer
+//    mais ne les lit jamais (lecture = Response Viewer, espace admin).
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum FormStatus {
+  DRAFT
+  PUBLISHED
+  CLOSED
+}
+
+enum QuestionType {
+  SHORT_TEXT
+  LONG_TEXT
+  SINGLE_CHOICE
+  MULTIPLE_CHOICE
+  RATING
+  NUMBER
+  EMAIL
+  DATE
+}
+
+model Form {
+  id            String     @id @default(cuid())            // clé interne — jamais exposée publiquement
+  title         String
+  description   String?
+  publicId      String     @unique @default(cuid())        // jeton opaque d'accès public : /f/[publicId]
+  status        FormStatus @default(DRAFT)                 // seul PUBLISHED est lisible publiquement
+  generatedByAi Boolean    @default(false)                 // provenance : formulaire issu de la génération IA
+  aiPrompt      String?                                    // prompt source (traçabilité) ; null si création manuelle
+  questions     Question[]
+  responses     Response[]
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+}
+
+model Question {
+  id       String       @id @default(cuid())
+  form     Form         @relation(fields: [formId], references: [id], onDelete: Cascade)
+  formId   String
+  label    String
+  type     QuestionType
+  required Boolean      @default(false)
+  order    Int
+  options  Option[]
+  answers  Answer[]
+}
+
+model Option {
+  id         String   @id @default(cuid())
+  question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  questionId String
+  label      String
+  order      Int
+  answers    Answer[] @relation("AnswerSelectedOptions")
+}
+
+model Response {
+  id          String   @id @default(cuid())
+  form        Form     @relation(fields: [formId], references: [id], onDelete: Cascade)
+  formId      String
+  submittedAt DateTime @default(now())
+  answers     Answer[]
+}
+
+model Answer {
+  id              String   @id @default(cuid())
+  response        Response @relation(fields: [responseId], references: [id], onDelete: Cascade)
+  responseId      String
+  question        Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  questionId      String
+  value           String?
+  selectedOptions Option[] @relation("AnswerSelectedOptions")
+}

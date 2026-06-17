@@ -1,0 +1,52 @@
+# Méthode de travail interne (non poussée sur GitHub)
+CLAUDE.md
+.claude/
+
+# Dépendances
+node_modules/
+/.pnp
+.pnp.*
+vendor/
+
+# Next.js
+/.next/
+/out/
+next-env.d.ts
+*.tsbuildinfo
+
+# Environnement / secrets
+.env
+.env.*
+!.env.example
+*.local
+secrets/
+*.pem
+*.key
+credentials*.json
+
+# Tests (Cypress)
+/coverage
+cypress/videos/
+cypress/screenshots/
+cypress/downloads/
+
+# Build / dist
+dist/
+build/
+out/
+
+# Déploiement
+.vercel
+
+# Logs
+*.log
+logs/
+
+# Système
+.DS_Store
+Thumbs.db
+
+# Éditeurs
+.vscode/
+.idea/
+*.swp

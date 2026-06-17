@@ -1,0 +1,17 @@
+node_modules
+.next
+.git
+.github
+.claude
+CLAUDE.md
+docs
+tests
+cypress
+*.md
+.env
+.env.*
+!.env.example
+npm-debug.log*
+Dockerfile
+.dockerignore
+docker-compose.yml
