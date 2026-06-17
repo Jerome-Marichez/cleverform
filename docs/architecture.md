@@ -103,19 +103,26 @@ Détail complet (validation des entrées, cookies, IA) : [`security.md`](./secur
 ## Environnements (dev / preprod / prod)
 
 La base **Neon** est provisionnée via l'**intégration Marketplace Vercel** (elle injecte
-automatiquement `DATABASE_URL`, `DATABASE_URL_UNPOOLED`, etc. dans le projet). Les trois
-environnements s'alignent sur les **branches git** et les **environnements Vercel** :
+automatiquement `DATABASE_URL`, `DATABASE_URL_UNPOOLED`, etc. dans le projet). Les environnements
+s'alignent sur les **branches git** et les **environnements Vercel**, avec une **isolation par base**
+assurée par le **preview branching** de Neon :
 
-| Logique | Branche git | Environnement Vercel | Base |
-|---------|-------------|----------------------|------|
-| **prod** | `main` | **Production** | Neon (branche `production`) |
-| **preprod** | `dev` | **Preview** (limité à `dev`) | Neon (branche dédiée) |
-| **dev** (local) | local | **Development** (`.env.local`) | Neon (branche dédiée) |
+| Logique | Branche git | Environnement Vercel | Base Neon |
+|---------|-------------|----------------------|-----------|
+| **prod** | `main` | **Production** | branche principale (`production`) |
+| **preprod** | `dev` (et toute branche en PR) | **Preview** | branche **isolée par déploiement** (copy-on-write, auto) |
+| **dev** (local) | local | **Development** (`.env.local`) | branche principale (via `make db-pull`) |
 
-> « preprod » correspond à l'environnement **Preview** de Vercel (aucune option payante requise).
-> En local, `make db-pull` récupère les variables de l'environnement *Development* dans `.env.local`.
-> L'isolation **physique** par branche Neon par environnement (toggle *preview branching* de
-> l'intégration Neon) est activable ensuite ; à défaut, les environnements partagent la branche par défaut.
+> **Preview branching** : l'intégration Neon crée une **branche Neon isolée (copy-on-write) par
+> déploiement Preview** (dont `dev`). Comme elle est copiée depuis la prod, elle **hérite du schéma
+> et des données** au moment du branchement — aucune migration à rejouer, sauf si la PR introduit une
+> nouvelle migration. Les variables de connexion de la branche sont **injectées au déploiement via
+> webhook** (elles n'apparaissent pas dans les env vars du projet), et la branche est **supprimée
+> automatiquement** quand le déploiement est retiré.
+>
+> Activation (une fois) : Vercel → **Storage** → base Neon → **Connect Project** →
+> *Advanced Options → Deployments Configuration* → activer **Preview** (+ *Resource must be active
+> before deployment*). En local, `make db-pull` récupère les variables *Development* dans `.env.local`.
 
 Détail des variables et du flux de déploiement : [`ci-cd.md`](./ci-cd.md). Configuration Prisma
 et migrations : [`data-model.md`](./data-model.md).
