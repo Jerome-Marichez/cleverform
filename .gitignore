@@ -56,3 +56,6 @@ Thumbs.db
 .vscode/
 .idea/
 *.swp
+
+# Extensions VS Code packagées (artefacts tiers, non liés au projet)
+*.vsix
