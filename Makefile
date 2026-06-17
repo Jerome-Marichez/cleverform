@@ -6,8 +6,12 @@
 IMAGE ?= cleverform
 PORT  ?= 3000
 
+# BDD de test dédiée (intégration/système) — JAMAIS la base Neon de prod.
+TEST_DB_URL ?= postgresql://test:test@localhost:55432/cleverform_test
+
 .PHONY: help install ci-install dev build start lint typecheck \
         test-unit test-integration test-e2e test-system \
+        test-db-up test-db-down test-db-prepare \
         storybook build-storybook \
         prisma-generate db-migrate db-deploy db-status db-pull \
         docker-build docker-run docker-up docker-down
@@ -39,8 +43,22 @@ typecheck: ## Vérification des types (tsc)
 test-unit: ## Tests unitaires — front + back (Jest)
 	npm run test:unit
 
-test-integration: ## Tests d'intégration — front + back (Jest)
+test-integration: ## Tests d'intégration — back (Jest + BDD de test). Démarrer `make test-db-up` d'abord.
 	npm run test:integration
+
+test-db-up: ## Démarre la BDD de test (conteneur Postgres, port 55432) et applique le schéma
+	docker run -d --name cleverform-test-db \
+		-e POSTGRES_USER=test -e POSTGRES_PASSWORD=test -e POSTGRES_DB=cleverform_test \
+		-p 55432:5432 postgres:16-alpine
+	@echo "Attente de Postgres..."
+	@until docker exec cleverform-test-db pg_isready -U test -d cleverform_test >/dev/null 2>&1; do sleep 1; done
+	@$(MAKE) test-db-prepare
+
+test-db-prepare: ## Applique les migrations Prisma sur la BDD de test
+	DIRECT_URL="$(TEST_DB_URL)" npx prisma migrate deploy
+
+test-db-down: ## Arrête et supprime la BDD de test
+	-docker rm -f cleverform-test-db
 
 test-e2e: ## Tests e2e — front (Cypress) : build requis (make build), serveur lancé auto
 	npx start-server-and-test "npm run start" http://localhost:3000 "npm run test:e2e"
