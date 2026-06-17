@@ -53,4 +53,51 @@ describe("DottedBackground (unitaire)", () => {
     );
     expect(container.querySelector('[aria-hidden="true"]')).not.toBeNull();
   });
+
+  it("révèle la couche halo interactive par défaut (pas de réduction de mouvement)", () => {
+    const { container } = renderWithTheme(<DottedBackground />, "light");
+    expect(
+      container.querySelector('[data-dotted-layer="base"]'),
+    ).not.toBeNull();
+    expect(
+      container.querySelector('[data-dotted-layer="halo"]'),
+    ).not.toBeNull();
+  });
+
+  it("n'ajoute pas la couche halo quand interactive est désactivé", () => {
+    const { container } = renderWithTheme(
+      <DottedBackground interactive={false} />,
+      "light",
+    );
+    expect(
+      container.querySelector('[data-dotted-layer="base"]'),
+    ).not.toBeNull();
+    expect(container.querySelector('[data-dotted-layer="halo"]')).toBeNull();
+  });
+
+  it("retombe sur le motif statique si prefers-reduced-motion est actif", () => {
+    // On force la préférence « réduire les animations » au niveau de matchMedia.
+    const original = window.matchMedia;
+    window.matchMedia = (query: string): MediaQueryList =>
+      ({
+        matches: query.includes("prefers-reduced-motion"),
+        media: query,
+        onchange: null,
+        addListener: () => {},
+        removeListener: () => {},
+        addEventListener: () => {},
+        removeEventListener: () => {},
+        dispatchEvent: () => false,
+      }) as MediaQueryList;
+
+    try {
+      const { container } = renderWithTheme(<DottedBackground />, "light");
+      expect(
+        container.querySelector('[data-dotted-layer="base"]'),
+      ).not.toBeNull();
+      expect(container.querySelector('[data-dotted-layer="halo"]')).toBeNull();
+    } finally {
+      window.matchMedia = original;
+    }
+  });
 });
