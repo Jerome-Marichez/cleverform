@@ -15,6 +15,18 @@ import { questionTypeSchema, type QuestionType } from "@/shared/schemas/form";
 //
 // Voir docs/data-model.md (section « Règles de validation par type »).
 
+// --- Bornes anti-abus (surface publique non authentifiée) -------------------
+//
+// L'endpoint public `POST /api/public/forms/[publicId]/responses` est anonyme :
+// on borne donc la taille des entrées pour éviter le remplissage de la base et la
+// saturation mémoire (DoS). Les seuils sont volontairement larges (ils ne gênent
+// aucun usage légitime, y compris un long texte) mais finis. Exportés pour être
+// réutilisés par les tests.
+export const MAX_VALUE_LENGTH = 10_000;
+export const MAX_ANSWERS_PER_SUBMISSION = 500;
+export const MAX_SELECTED_OPTIONS = 100;
+export const MAX_ID_LENGTH = 100;
+
 // --- Forme brute d'une soumission ------------------------------------------
 
 // Une réponse porte au plus l'un des deux supports :
@@ -23,16 +35,24 @@ import { questionTypeSchema, type QuestionType } from "@/shared/schemas/form";
 export const answerInputSchema = z.object({
   questionId: z
     .string()
-    .min(1, { error: "L'identifiant de la question est requis." }),
-  value: z.string().optional(),
-  selectedOptionIds: z.array(z.string().min(1)).optional(),
+    .min(1, { error: "L'identifiant de la question est requis." })
+    .max(MAX_ID_LENGTH, { error: "Identifiant de question trop long." }),
+  value: z
+    .string()
+    .max(MAX_VALUE_LENGTH, { error: "La réponse est trop longue." })
+    .optional(),
+  selectedOptionIds: z
+    .array(z.string().min(1).max(MAX_ID_LENGTH))
+    .max(MAX_SELECTED_OPTIONS, { error: "Trop d'options sélectionnées." })
+    .optional(),
 });
 export type AnswerInput = z.infer<typeof answerInputSchema>;
 
 export const submitResponseSchema = z.object({
   answers: z
     .array(answerInputSchema)
-    .min(1, { error: "Une soumission doit comporter au moins une réponse." }),
+    .min(1, { error: "Une soumission doit comporter au moins une réponse." })
+    .max(MAX_ANSWERS_PER_SUBMISSION, { error: "Trop de réponses dans la soumission." }),
 });
 export type SubmitResponseInput = z.infer<typeof submitResponseSchema>;
 
