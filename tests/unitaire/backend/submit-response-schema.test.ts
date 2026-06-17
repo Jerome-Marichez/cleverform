@@ -189,3 +189,66 @@ describe("buildSubmitResponseSchema (soumission complète)", () => {
     expect(result.success).toBe(false);
   });
 });
+
+describe("buildSubmitResponseSchema (appartenance des options)", () => {
+  // Question à choix unique facultative portant deux options connues.
+  const questions: Array<{
+    id: string;
+    type: QuestionType;
+    required: boolean;
+    options: Array<{ id: string }>;
+  }> = [
+    {
+      id: "q1",
+      type: "SINGLE_CHOICE",
+      required: false,
+      options: [{ id: "opt1" }, { id: "opt2" }],
+    },
+  ];
+
+  it("accepte une option appartenant à la question", () => {
+    const schema = buildSubmitResponseSchema(questions);
+    const result = schema.safeParse({
+      answers: [{ questionId: "q1", selectedOptionIds: ["opt1"] }],
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("rejette une option étrangère à la question (autre formulaire)", () => {
+    const schema = buildSubmitResponseSchema(questions);
+    const result = schema.safeParse({
+      answers: [{ questionId: "q1", selectedOptionIds: ["opt-d-un-autre-form"] }],
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejette si une seule des options soumises est étrangère", () => {
+    // Choix multiple : une option valide + une option inconnue → rejet global.
+    const multi = [
+      {
+        id: "q1",
+        type: "MULTIPLE_CHOICE" as QuestionType,
+        required: false,
+        options: [{ id: "opt1" }, { id: "opt2" }],
+      },
+    ];
+    const schema = buildSubmitResponseSchema(multi);
+    const result = schema.safeParse({
+      answers: [{ questionId: "q1", selectedOptionIds: ["opt1", "intrus"] }],
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejette des options soumises sur une question sans options (type texte)", () => {
+    // La persistance connecte les options sans filtrer sur le type : une option
+    // glissée sur une question texte doit être rejetée en amont.
+    const text = [
+      { id: "q1", type: "SHORT_TEXT" as QuestionType, required: false, options: [] },
+    ];
+    const schema = buildSubmitResponseSchema(text);
+    const result = schema.safeParse({
+      answers: [{ questionId: "q1", value: "Jean", selectedOptionIds: ["opt1"] }],
+    });
+    expect(result.success).toBe(false);
+  });
+});
