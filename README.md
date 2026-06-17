@@ -26,6 +26,7 @@ Application web fullstack permettant de :
 | Conteneurisation | **Docker** (portabilité / compatibilité ; livraison via Vercel) |
 | Commandes | **Make** (interface agnostique) |
 | UI | **MUI (Material UI)** — thème clair/sombre, détection système |
+| Icônes animées | **lordicon** (`@lordicon/react` + Lottie JSON **auto-hébergés**, sans CDN) |
 | Visualisation des composants | **Storybook** (rendu/doc des composants) |
 | Formulaires & validation | **React Hook Form + Zod** |
 | Drag & drop (builder) | **dnd-kit** |
@@ -44,6 +45,7 @@ en couches dépendant du `shared` :
 src/
   middleware.ts # garde d'accès admin (/admin/* et /api/admin/*)
   app/          # Next.js App Router — points d'entrée : pages (front) + routes API (back)
+    page.tsx      # page d'accueil PUBLIQUE : présentation + accès à l'espace admin
     (admin)/      # espace ADMIN protégé : Form Builder, Response Viewer, génération IA
     f/[publicId]/ # Form Responder PUBLIC (jeton opaque, formulaires publiés uniquement)
     api/

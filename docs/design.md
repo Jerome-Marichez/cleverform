@@ -25,6 +25,27 @@
 
 Composants en **PascalCase** (`FormBuilder.tsx`, `QuestionCard.tsx`), hooks en **camelCase** (`useFormBuilder.ts`). Les composants vivent sous `src/frontend/components/`.
 
+## Page d'accueil
+
+La page d'accueil publique (`src/app/page.tsx`) présente CleverConnect et oriente vers l'espace admin : `AppHeader` (marque + bascule de thème), un hero centré « CleverConnect » avec un sous-titre décrivant le produit (créer, diffuser, visualiser des questionnaires, génération assistée par IA), trois fonctions clés illustrées par des **icônes animées**, et des appels à l'action vers `/admin`. Elle est responsive et **theme-aware** (clair / sombre).
+
+### Fond pointillé décoratif (`DottedBackground`)
+
+`src/frontend/components/DottedBackground.tsx` rend un **motif de points verts subtil** via un `radial-gradient` répété (`backgroundImage` + `backgroundSize`), sans image ni dépendance externe. La couleur des points dérive du **`secondary` du thème** (vert lime) appliqué à **faible opacité** — légèrement renforcée en mode sombre pour rester lisible : le motif est donc **theme-aware**. Un léger fondu vers les bords (`maskImage`) adoucit le rendu. La couche est purement décorative : `aria-hidden`, `pointerEvents: "none"`, positionnée **derrière** le contenu (`position: absolute`). Elle s'utilise soit en overlay (sans enfant), soit comme conteneur (le contenu est alors empilé au-dessus).
+
+### Icônes animées (lordicon auto-hébergé)
+
+Les icônes animées s'appuient sur `@lordicon/react` (moteur `lottie-web`) avec des fichiers **Lottie JSON stockés localement** dans `public/icons/` (`create.json`, `share.json`, `analyze.json`). **Aucune dépendance CDN ni réseau à l'exécution** : les animations restent disponibles hors-ligne, en Docker et en CI (portabilité).
+
+Le wrapper `src/frontend/components/LordIcon.tsx` :
+
+- charge le lecteur lordicon **uniquement côté client** via `next/dynamic` (`ssr: false`) — `lottie-web` dépend du DOM navigateur (shadow DOM, canvas) et ne peut pas s'exécuter au rendu serveur ; tant qu'il n'est pas chargé, un espace réservé dimensionné est rendu (aucun crash SSR) ;
+- pilote l'animation de façon impérative selon la prop `trigger` : `hover` (rejoue au survol), `loop` (rejoue à chaque fin) ou `once` (joue une fois quand le lecteur est prêt) ;
+- aligne la teinte sur la couleur **primaire** du thème (icônes colorisables) pour rester cohérent en clair comme en sombre ;
+- gère l'accessibilité : décorative par défaut (`aria-hidden`), ou `role="img"` + `aria-label` quand la prop `label` est fournie.
+
+Le lecteur proprement dit est isolé dans `LordIconPlayer.tsx` (chargé dynamiquement) pour cantonner l'import navigateur-only.
+
 ## Thème clair / sombre
 
 - **Couleur dominante : le vert** de la marque, décliné en clair **et** en sombre.
