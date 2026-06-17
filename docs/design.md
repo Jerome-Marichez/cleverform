@@ -57,6 +57,20 @@ Le lecteur proprement dit est isolé dans `LordIconPlayer.tsx` (chargé dynamiqu
 - L'utilisateur peut basculer **clair / sombre / système** via le composant `ColorModeToggle` ; le
   choix est mémorisé. Le mode clair/sombre s'applique à **tout** le système (admin **et** public).
 
+## Form Builder (éditeur de questionnaire)
+
+Le Form Builder (`/admin/forms/[id]/edit`) est l'interface d'administration de conception d'un questionnaire. Il s'organise en couches claires :
+
+- **Page** (`src/app/admin/forms/[id]/edit/page.tsx`) : Server Component fin qui charge le questionnaire (`getForm`) par sa **clé interne** (jamais l'identifiant public) et délègue l'édition au Client Component `FormBuilder`. Un questionnaire introuvable produit un `notFound()` (404). En Next.js 16, `params` est asynchrone (`Promise`).
+- **`FormBuilder`** (`src/frontend/components/builder/FormBuilder.tsx`) : orchestration. Édition du **titre** et de la **description**, **palette** des types, liste de questions réordonnable, et actions **Enregistrer** (PATCH `/api/admin/forms/[id]`) et **Publier** (PATCH `/api/admin/forms/[id]/publish`). Les états de chargement/erreur sont matérialisés par les boutons en `loading` et un `StatusSnackbar` (succès / erreur).
+- **`QuestionTypePalette`** : les **8 types** (dérivés de `questionTypeMeta`) ; un clic ajoute une question vide de ce type en fin de liste.
+- **`QuestionEditorItem`** : carte d'édition d'une question (libellé, type, switch « obligatoire », suppression) avec **poignée de glisser-déposer**. L'**éditeur d'options** n'apparaît que pour les types à choix (`isChoiceQuestionType` → `SINGLE_CHOICE` / `MULTIPLE_CHOICE`).
+- **`OptionsEditor`** : ajout / suppression / saisie / réordonnancement des options d'une question à choix (au moins une option conservée).
+
+**Drag & drop** : `@dnd-kit/core` + `@dnd-kit/sortable` (stratégie verticale) à deux niveaux — réordonnancement des **questions** et des **options** d'une même question. Chaque élément porte un **identifiant local** stable (clé React + cible du tri), distinct de la clé Prisma.
+
+**État & validation** : la logique d'édition est isolée dans le hook `useFormBuilder` (`src/frontend/hooks/useFormBuilder.ts`), **pur et testable** (add / remove / update / reorder, réindexation dense des `order`, contrainte d'options pour les types à choix). Avant tout envoi, l'état est **validé localement** (titre non vide, au moins une question, libellés non vides, options des types à choix), en cohérence avec `updateFormSchema` ; la validation serveur reste l'autorité finale. À l'enregistrement, les questions sont **réindexées** (`order` 0..n selon leur position) puis envoyées en remplacement complet.
+
 ## États de l'interface (systématiques)
 
 | État | Traitement |

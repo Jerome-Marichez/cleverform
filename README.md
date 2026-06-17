@@ -68,6 +68,12 @@ L'**administration des questionnaires** est exposée par les routes `/api/admin/
 (CRUD + publication/clôture), adossées à la couche `backend/form` (service / repository / règles
 pures). Détail des routes et du découpage : [`docs/architecture.md`](./docs/architecture.md).
 
+Le **Form Builder** (`/admin/forms/[id]/edit`) est l'éditeur visuel de questionnaire :
+édition du titre/description, palette des 8 types de questions, réordonnancement **drag & drop**
+(questions et options) via `@dnd-kit`, et éditeur d'options pour les types à choix. La logique
+d'édition est isolée dans le hook **pur et testable** `useFormBuilder`. Détail UX :
+[`docs/design.md`](./docs/design.md).
+
 Le **domaine Réponse** (`src/backend/response/`) sert un questionnaire publié au Responder
 (`GET /api/public/forms/[publicId]`), enregistre les soumissions validées
 (`POST /api/public/forms/[publicId]/responses`, write-only) et expose l'agrégat au Response Viewer
