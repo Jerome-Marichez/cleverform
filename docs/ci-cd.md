@@ -28,6 +28,12 @@ en local et en CI** (voir [`tooling.md`](./tooling.md)). `make ci-install` fait 
 - ✅ **Lint** (ESLint) + **typecheck** (`tsc --noEmit`)
 - ✅ Tests **unitaires** + **intégration** (Jest)
 
+> Le workflow `ci-dev-tests.yml` provisionne un **service Postgres éphémère**
+> (`postgres:16-alpine`) pour l'**intégration** : `TEST_DATABASE_URL` pointe sur ce
+> service, `make test-db-prepare` y applique le schéma (`prisma migrate deploy`),
+> puis `make test-integration` s'exécute. Cette base de **test dédiée** n'est
+> **jamais** la base Neon de production (garde-fou anti-prod dans le setup Jest).
+
 ### PR → `main` (long, mise en production)
 
 - ✅ **Build local** (`next build`)

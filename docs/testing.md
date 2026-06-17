@@ -17,9 +17,23 @@ voie immédiatement *ce qui* est testé : l'**interface** ou le **serveur**.
 | **systeme** | **backend uniquement** | scénarios système côté serveur : Route Handlers / API / données, de bout en bout | **Cypress** (`cy.request` — tests API) |
 
 > Deux outils complémentaires : **Jest** (unitaire + intégration, transformé par `next/jest` —
-> SWC, résolution de l'alias `@/*`, deux projets *node* / *jsdom*) et **Cypress** (e2e navigateur +
-> système API via `cy.request`). Les fichiers se distinguent par leur **extension** :
+> SWC, résolution de l'alias `@/*`) et **Cypress** (e2e navigateur + système API via `cy.request`).
+> Jest est configuré en **quatre projets** (matrice niveau × côté) : `unit-backend` (node),
+> `unit-frontend` (jsdom), `integration-backend` (node + **BDD de test** réelle) et
+> `integration-frontend` (jsdom). Les fichiers se distinguent par leur **extension** :
 > `*.test.ts(x)` → Jest, `*.cy.ts(x)` → Cypress.
+
+### BDD de test (intégration backend)
+
+Les tests `integration-backend` exercent les **vrais** Route Handlers → services → Prisma
+contre un **Postgres de test dédié** (jamais la base Neon de production). Le setup
+[`tests/integration/jest.setup.ts`](../tests/integration/jest.setup.ts) pointe `DATABASE_URL`
+sur cette base (via `TEST_DATABASE_URL`, défaut local `…:55432/cleverform_test`) **avant** le
+chargement des modules, et **refuse** toute URL Neon (garde-fou anti-prod). Chaque test part
+d'une base propre (`resetDatabase` = `TRUNCATE … CASCADE`). En local : `make test-db-up`
+(conteneur Postgres + schéma) ; en CI : un **service Postgres** éphémère (voir
+[`ci-cd.md`](./ci-cd.md)). Ces suites tournent en **série** (`--runInBand`) car elles
+partagent la base.
 
 Règle de découpage :
 
@@ -60,8 +74,10 @@ tests/
     frontend/    # composants, hooks, utils UI (Jest + Testing Library, jsdom) — *.test.tsx
     backend/     # schémas Zod, parsing IA, logique pure (Jest, node) — *.test.ts
   integration/
+    jest.setup.ts  # pointe DATABASE_URL sur la BDD de test (garde-fou anti-prod)
+    helpers/db.ts  # resetDatabase / disconnectDatabase (TRUNCATE entre tests)
     frontend/    # composant + interactions formulaire (Jest + Testing Library, fixtures) — *.test.tsx
-    backend/     # Server Actions / Route Handlers + Prisma (Jest, node, BDD de test) — *.test.ts
+    backend/     # Route Handlers + services + Prisma sur Postgres de test — *.test.ts
   e2e/
     frontend/    # parcours navigateur de bout en bout (Cypress E2E) — *.cy.ts, front uniquement
   systeme/
@@ -74,11 +90,16 @@ Via **Make** (interface unique — voir [`tooling.md`](./tooling.md)) ou npm :
 
 ```bash
 make test-unit          # tests unitaires — front + back (Jest)
-make test-integration   # tests d'intégration — front + back (Jest)
+make test-db-up         # démarre la BDD de test (Postgres) + applique le schéma
+make test-integration   # tests d'intégration — back (Jest, BDD de test, en série)
+make test-db-down       # arrête la BDD de test
 make test-e2e           # tests e2e — front (Cypress)
 make test-system        # tests système — back (Cypress)
-npm test                # = jest : unitaire + intégration en une seule passe
+npm test                # unitaire puis intégration (cette dernière en série)
 ```
+
+> Les tests d'intégration nécessitent la **BDD de test** : lancer `make test-db-up`
+> au préalable (conteneur Postgres + migrations). `make test-db-down` la supprime.
 
 > `make test-e2e` / `make test-system` lancent le serveur (`npm run start`) via
 > `start-server-and-test` avant d'exécuter Cypress — un **`make build` préalable est requis**.
@@ -122,6 +143,7 @@ Périmètre couvert (regroupé par fichier de test) :
 | `admin/NewFormButton.test.tsx` | `NewFormButton` (libellé, ouverture de la boîte de création) — *stub `next/navigation`* |
 | `admin/GenerateWithAiButton.test.tsx` | `GenerateWithAiButton` (libellé, ouverture de la boîte de génération IA) — *stub `next/navigation`* |
 | `auth/LoginForm.test.tsx` | `LoginForm` (mot de passe requis, erreur serveur, redirection, anti open-redirect, erreur réseau) — *stub `next/navigation` + `fetch`* |
+| `builder/FormBuilder.test.tsx` | `FormBuilder` (rendu, actions par statut, validation, enregistrement / publication, copie du lien) — *stub `next/navigation` + `fetch` + presse-papier* |
 
 ### Hooks frontend (unitaire)
 
@@ -131,6 +153,7 @@ Périmètre couvert (regroupé par fichier de test) :
 | `responder/useResponderForm.test.ts` | Mapping valeurs ⇄ `AnswerInput`, valeurs par défaut par type |
 | `hooks/useCopyToClipboard.test.ts` | Copie via `navigator.clipboard`, repli `execCommand`, échec — *stub frontière presse-papier* |
 | `hooks/useAiAssist.test.ts` | Génération / correction IA, états `pending` / `error`, reset — *stub frontière `fetch`* |
+| `hooks/useFormMutations.test.ts` | Création / changement de statut / suppression, `pending` / `error` / reset — *stub frontière `fetch`* |
 
 ### Logique partagée et backend (unitaire)
 
@@ -143,32 +166,43 @@ Périmètre couvert (regroupé par fichier de test) :
 | `backend/admin-session.test.ts`, `rate-limit.test.ts` | Session admin (cookie signé) et limitation de débit |
 | `frontend/lib/publicFormUrl.ssr.test.ts` | Branche **SSR** de `buildPublicFormUrl` (env. `node`, `window` réellement indisponible) |
 
-> Objectif de couverture : pas de seuil chiffré imposé pour l'instant ; la règle
-> est qu'**aucun composant ou logique pure ne reste sans test unitaire**. Les
-> couches de **données** (services, repositories, Route Handlers, client IA)
-> relèvent de l'**intégration / système** et ne sont pas comptées dans la
-> couverture unitaire ci-dessous.
+> Objectif de couverture : la règle est qu'**aucun composant ou logique pure ne
+> reste sans test unitaire**, et les **couches de données** (Route Handlers,
+> services, repositories) sont couvertes par l'**intégration** sur BDD de test.
 
-### Rapport de couverture (unitaire)
+### Intégration backend (Route Handlers + services + Prisma)
 
-> **Rapport du 2026-06-17** — généré via
-> `npx jest tests/unitaire --coverage` (hors fichiers Storybook `*.stories.tsx`).
-> **405 tests** répartis sur **47 suites**, tous au vert.
+Suites exerçant les **vrais** handlers contre le Postgres de test (données réelles,
+aucun mock) :
+
+| Fichier de test | Objet |
+|-----------------|-------|
+| `backend/admin-forms.test.ts` | `POST` / `GET /api/admin/forms` — création persistée, validation 400, liste |
+| `backend/form-lifecycle.test.ts` | `PATCH` / `DELETE /api/admin/forms/[id]` + `[id]/publish` — mise à jour, transitions (200/404/409), suppression cascade |
+| `backend/public-form-flow.test.ts` | Flux public — lecture (sans fuite d'`id` interne), 404 brouillon, soumission de réponses, rejets 400/404 |
+| `backend/admin-responses.test.ts` | `GET /api/admin/forms/[id]/responses` — agrégat + liste, 404 |
+| `backend/ai-routes.test.ts` | Gardes des routes IA (`generate` / `proofread`) — 401 sans session, 400 corps invalide (sans appel Anthropic) |
+| `backend/auth-login.test.ts` | `POST /api/auth/login` — cookie de session signé, 401 / 400 |
+| `backend/system-routes.test.ts` | `GET /api/health`, `POST /api/auth/logout` |
+
+### Rapport de couverture
+
+> **Rapport du 2026-06-17** — généré via `npx jest --coverage --runInBand`
+> (unitaire **+** intégration, hors fichiers Storybook `*.stories.tsx`).
+> **454 tests** répartis sur **56 suites**, tous au vert.
 
 | Métrique | Couverture | Détail |
 |----------|-----------|--------|
-| **Statements** | **62,66 %** | 1128 / 1800 |
-| **Branches** | **64,02 %** | 429 / 670 |
-| **Functions** | **66,66 %** | 264 / 396 |
-| **Lines** | **62,83 %** | 1077 / 1714 |
+| **Statements** | **82,94 %** | 1493 / 1800 |
+| **Branches** | **77,16 %** | 517 / 670 |
+| **Functions** | **82,07 %** | 325 / 396 |
+| **Lines** | **83,89 %** | 1438 / 1714 |
 
-Le total est mesuré sur **tout** `src/`. Il inclut donc des fichiers à 0 %
-**par conception** (Route Handlers `src/app/api/**`, services, repositories,
-client IA, `db.ts`) qui sont des cibles **intégration / système** et non
-unitaires — ce qui tire mécaniquement le pourcentage global vers le bas. Sur le
-périmètre réellement visé par l'unitaire, la couverture est élevée : `src/shared/schemas`
-≈ 94 %, composants `fields` / `form` / `viewer` / `responder` ≈ 97-100 %, hooks
-`useFormBuilder` / `useResponderForm` ≈ 96-98 %.
+Mesure sur **tout** `src/`. Les rares zones non couvertes restantes sont
+principalement le **chemin nominal IA** (appel Anthropic réel, réservé aux tests
+système) et des **pages RSC** (`src/app/**/page.tsx`, vérifiées en e2e). À titre
+de comparaison, l'unitaire **seul** couvrait 62,66 % des statements ; l'ajout de
+l'**intégration** sur BDD réelle porte le total au-delà de **80 %**.
 
 > Le rapport HTML détaillé (`lcov`) **n'est pas versionné** (volumineux,
 > regénérable) : ajouter `--coverageReporters=html` à la commande ci-dessus le
