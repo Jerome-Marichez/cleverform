@@ -69,8 +69,9 @@ L'**administration des questionnaires** est exposée par les routes `/api/admin/
 pures). Détail des routes et du découpage : [`docs/architecture.md`](./docs/architecture.md).
 
 Le **tableau de bord admin** (`/admin`) — coquille commune (en-tête + déconnexion) et liste des
-questionnaires (création, publication / clôture, **copie du lien public**, suppression) — lit les
-données côté serveur via `listForms()` et délègue les interactions à des composants clients dédiés
+questionnaires (création, publication / clôture, **copie du lien public**, accès aux réponses,
+suppression) — lit les données côté serveur via `listForms()` et délègue les interactions à des
+composants clients dédiés
 (`src/frontend/components/admin/`). Parcours et composants : [`docs/design.md`](./docs/design.md).
 
 Le **Form Builder** (`/admin/forms/[id]/edit`) est l'éditeur visuel de questionnaire :

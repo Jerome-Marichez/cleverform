@@ -8,9 +8,10 @@ import { FormCardActions } from "@/frontend/components/admin/FormCardActions";
 // (pas de DB ni d'HTTP réel) : on teste le COMPORTEMENT de présentation.
 
 const refresh = jest.fn();
+const push = jest.fn();
 
 jest.mock("next/navigation", () => ({
-  useRouter: () => ({ refresh }),
+  useRouter: () => ({ refresh, push }),
 }));
 
 function openMenu() {
@@ -22,6 +23,7 @@ function openMenu() {
 describe("FormCardActions (unitaire)", () => {
   beforeEach(() => {
     refresh.mockClear();
+    push.mockClear();
     global.fetch = jest.fn() as unknown as typeof fetch;
   });
 
@@ -58,6 +60,37 @@ describe("FormCardActions (unitaire)", () => {
     expect(
       screen.queryByRole("menuitem", { name: /Publier/ }),
     ).not.toBeInTheDocument();
+  });
+
+  it("ne propose pas « Voir les réponses » pour un brouillon (DRAFT)", () => {
+    renderWithTheme(
+      <FormCardActions id="f1" publicId="pub1" title="Test" status="DRAFT" />,
+    );
+    openMenu();
+    expect(
+      screen.queryByRole("menuitem", { name: /Voir les réponses/ }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("navigue vers les réponses depuis un questionnaire publié", () => {
+    renderWithTheme(
+      <FormCardActions id="f1" publicId="pub1" title="Test" status="PUBLISHED" />,
+    );
+    openMenu();
+    fireEvent.click(
+      screen.getByRole("menuitem", { name: /Voir les réponses/ }),
+    );
+    expect(push).toHaveBeenCalledWith("/admin/forms/f1/responses");
+  });
+
+  it("propose « Voir les réponses » pour un questionnaire clôturé (CLOSED)", () => {
+    renderWithTheme(
+      <FormCardActions id="f1" publicId="pub1" title="Test" status="CLOSED" />,
+    );
+    openMenu();
+    expect(
+      screen.getByRole("menuitem", { name: /Voir les réponses/ }),
+    ).toBeInTheDocument();
   });
 
   it("propose « Copier le lien » uniquement pour un questionnaire publié", () => {
