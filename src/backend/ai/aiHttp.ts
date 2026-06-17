@@ -10,7 +10,7 @@
 import { NextResponse } from "next/server";
 import { ZodError } from "zod";
 
-import { MissingApiKeyError } from "@/backend/ai/aiClient";
+import { AiUnavailableError, MissingApiKeyError } from "@/backend/ai/aiClient";
 import { AiGenerationError } from "@/backend/ai/aiErrors";
 import { UnauthorizedError } from "@/backend/auth/requireAdmin";
 
@@ -33,7 +33,7 @@ export function toAiErrorResponse(error: unknown): NextResponse {
   if (error instanceof ZodError) {
     return errorResponse(400, "Données invalides.", error.issues);
   }
-  if (error instanceof MissingApiKeyError) {
+  if (error instanceof MissingApiKeyError || error instanceof AiUnavailableError) {
     return errorResponse(503, "L'assistance IA est indisponible pour le moment.");
   }
   if (error instanceof AiGenerationError) {

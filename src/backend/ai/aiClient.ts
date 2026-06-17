@@ -30,6 +30,21 @@ export class MissingApiKeyError extends Error {
   }
 }
 
+/**
+ * Erreur levée lorsque l'API Anthropic refuse l'authentification ou l'accès
+ * (clé invalide, révoquée ou sans permission). Du point de vue produit, c'est
+ * une **assistance IA indisponible** (config), pas une erreur interne : la route
+ * la traduit en 503, comme pour une clé absente.
+ */
+export class AiUnavailableError extends Error {
+  constructor() {
+    super(
+      "L'assistance IA est indisponible : l'authentification auprès du fournisseur a échoué.",
+    );
+    this.name = "AiUnavailableError";
+  }
+}
+
 /** Instancie le client Anthropic (échoue clairement si la clé est absente). */
 function createClient(): Anthropic {
   const apiKey = process.env.ANTHROPIC_API_KEY;
@@ -50,12 +65,25 @@ function createClient(): Anthropic {
 export async function callClaude(system: string, user: string): Promise<string> {
   const client = createClient();
 
-  const message = await client.messages.create({
-    model: AI_MODEL,
-    max_tokens: MAX_TOKENS,
-    system,
-    messages: [{ role: "user", content: user }],
-  });
+  let message: Anthropic.Message;
+  try {
+    message = await client.messages.create({
+      model: AI_MODEL,
+      max_tokens: MAX_TOKENS,
+      system,
+      messages: [{ role: "user", content: user }],
+    });
+  } catch (error) {
+    // Clé invalide / révoquée / sans permission : Anthropic répond 401 ou 403.
+    // On traduit en « IA indisponible » (config) plutôt qu'en erreur interne.
+    if (
+      error instanceof Anthropic.APIError &&
+      (error.status === 401 || error.status === 403)
+    ) {
+      throw new AiUnavailableError();
+    }
+    throw error;
+  }
 
   // La réponse est une liste de blocs ; on ne conserve que le texte.
   return message.content
