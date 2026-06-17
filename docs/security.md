@@ -29,8 +29,13 @@ Routes d'authentification (sous `src/app/api/auth/`, hors `/api/admin/*` donc no
 
 | Route | Méthode | Effet |
 |-------|---------|-------|
-| `/api/auth/login`  | `POST` | Valide `loginSchema`, vérifie le mot de passe, pose le cookie. `200` / `401` / `400`. |
+| `/api/auth/login`  | `POST` | Limite le débit par IP (anti-brute-force), valide `loginSchema`, vérifie le mot de passe, pose le cookie. `200` / `401` / `400` / `429`. |
 | `/api/auth/logout` | `POST` | Efface le cookie (`maxAge=0`). `200` (idempotent). |
+
+Anti-brute-force : le login applique un limiteur de débit par IP (`createRateLimiter`,
+[`src/backend/auth/rateLimit.ts`](../src/backend/auth/rateLimit.ts), 10 tentatives / minute), qui
+répond **429** + `Retry-After` au-delà. C'est un ralentisseur **best-effort** : l'état est en mémoire,
+donc par instance et éphémère — voir la limite serverless ci-dessous.
 
 La page de connexion [`/login`](../src/app/login/page.tsx) (MUI, React Hook Form + `zodResolver(loginSchema)`)
 poste vers `/api/auth/login`, gère chargement/erreur et redirige vers la cible d'origine (`?from=`,
@@ -137,6 +142,8 @@ n'existe pas de porte d'entrée publique à fermer.
 ## Limites assumées (hors périmètre)
 
 - Pas de multi-comptes ni de rôles (admin unique).
-- Pas de **rate limiting** sur la soumission publique ni sur la génération IA
-  (les tailles sont bornées, mais pas la fréquence des appels — à ajouter pour une mise en production réelle).
+- **Rate limiting** : le login admin est limité par IP (best-effort, en mémoire), mais la soumission
+  publique et la génération IA ne le sont pas (leurs tailles sont bornées, pas la fréquence). De plus,
+  l'état du limiteur n'est **pas partagé entre instances** serverless ni persistant : une mise en
+  production réelle s'appuierait sur un store partagé (Redis/Upstash) ou le rate limiting de la plateforme (WAF).
 - Pas de CAPTCHA ni de protection anti-spam sur le Responder public.

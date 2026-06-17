@@ -114,8 +114,9 @@ Le **Form Builder**, le **Response Viewer** et la **génération IA** sont rése
 **administrateur unique** (cookie de session signé, identifiants en variables d'environnement —
 pas de table `User`). Le **Form Responder** est la seule surface publique : accès à un formulaire
 **publié** via un **identifiant opaque** dans l'URL (`/f/[publicId]`, non devinable), le public
-restant **write-only** sur les réponses. La génération IA n'a aucune route publique. Détails :
-[`docs/security.md`](./docs/security.md).
+restant **write-only** sur les réponses. La génération IA n'a aucune route publique. Le login admin
+est limité en débit par IP (anti-brute-force) et les soumissions publiques sont bornées en taille.
+Détails : [`docs/security.md`](./docs/security.md).
 
 ## Conventions de nommage
 
