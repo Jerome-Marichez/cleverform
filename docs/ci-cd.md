@@ -43,8 +43,10 @@ en local et en CI** (voir [`tooling.md`](./tooling.md)). `make ci-install` fait 
 - **Livraison via Vercel** (front + back serverless) + **PostgreSQL** (Neon). Docker n'est pas la
   cible de livraison (Vercel l'est) mais garantit la portabilité.
 - **Preview URL** par PR ; **production** sur `main`.
-- Le client **Prisma** est généré au build via le script **`postinstall`** (`prisma generate`),
-  afin que `next build` dispose des types générés (sans base requise à la génération).
+- Le client **Prisma** est généré au build via le script **`build`** (`prisma generate && next build`),
+  afin que `next build` dispose des types générés (sans base requise à la génération). Sur Vercel,
+  qui lance `npm run build`, la génération est ainsi automatique ; le Dockerfile l'obtient via la
+  même commande de build.
 
 ### Variables d'environnement
 
