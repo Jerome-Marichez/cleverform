@@ -49,11 +49,12 @@ src/
     (admin)/      # espace ADMIN protégé : Form Builder, Response Viewer, génération IA
     f/[publicId]/ # Form Responder PUBLIC (jeton opaque, formulaires publiés uniquement)
     api/
-      admin/    #   routes BACKEND protégées : génération IA, opérations builder
-      public/   #   routes BACKEND publiques : soumission de réponses (write-only)
+      admin/    #   routes BACKEND protégées : génération IA, opérations builder, lecture des réponses
+      public/   #   routes BACKEND publiques : lecture d'un form publié + soumission de réponses (write-only)
   frontend/     # FRONTEND  — présentation : composants, hooks, vues
   backend/      # BACKEND   — métier : services, accès données (Prisma), intégration IA, session admin
     form/       #   formService (orchestration) + formRepository (Prisma) + formMapper (règles pures)
+    response/   #   domaine Réponse : repository (Prisma), service (use-cases), mapper pur (DTO + agrégation)
   shared/       # PARTAGÉ   — domaine : entités, types, schémas Zod (framework-agnostic)
     schemas/    #   schémas Zod & types inférés : CRUD Builder, soumission publique, login, DTO publics
 ```
@@ -66,6 +67,12 @@ publics (`PublicForm`, sans `id` interne). Détail et règles par type : [`docs/
 L'**administration des questionnaires** est exposée par les routes `/api/admin/forms`
 (CRUD + publication/clôture), adossées à la couche `backend/form` (service / repository / règles
 pures). Détail des routes et du découpage : [`docs/architecture.md`](./docs/architecture.md).
+
+Le **domaine Réponse** (`src/backend/response/`) sert un questionnaire publié au Responder
+(`GET /api/public/forms/[publicId]`), enregistre les soumissions validées
+(`POST /api/public/forms/[publicId]/responses`, write-only) et expose l'agrégat au Response Viewer
+admin (`GET /api/admin/forms/[id]/responses`). Le mapping DTO et l'agrégation sont une logique
+**pure** (testée sans base) ; un `Form` non publié renvoie 404 et l'`id` interne n'est jamais exposé.
 
 ### Accès & sécurité
 
@@ -117,6 +124,18 @@ En **Prisma 7**, la connexion runtime passe par un *driver adapter* (`DATABASE_U
 migrations par l'URL **directe** (`DATABASE_URL_UNPOOLED`), configurées dans `prisma.config.ts`.
 Répartition **dev / preprod / prod** ↔ branches git : voir [`docs/architecture.md`](./docs/architecture.md) ;
 détail Prisma & migrations : [`docs/data-model.md`](./docs/data-model.md).
+
+### Variables d'environnement requises
+
+| Variable | Rôle |
+|----------|------|
+| `DATABASE_URL` / `DATABASE_URL_UNPOOLED` | Connexion Neon (runtime poolé / migrations directes). |
+| `ANTHROPIC_API_KEY` | Clé IA (serveur uniquement). |
+| `ADMIN_PASSWORD` | Mot de passe de l'**administrateur unique** (comparé en temps constant). |
+| `SESSION_SECRET` | Secret HMAC de signature du **cookie de session** admin. |
+
+L'authentification admin (cookie de session signé HMAC, middleware sur `/admin/*` et `/api/admin/*`,
+page `/login`) repose sur `ADMIN_PASSWORD` et `SESSION_SECRET` — voir [`docs/security.md`](./docs/security.md).
 
 ## Documentation
 
