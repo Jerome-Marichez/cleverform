@@ -90,22 +90,40 @@ Les routes publiques s'appuient sur `src/backend/response/` :
 - **Lecture réservée à l'admin** : `GET /api/admin/forms/[id]/responses` (par `id` interne) est sous
   la garde admin du middleware (`/api/admin/*`) ; le public n'a aucune route de lecture des réponses.
 
-## 4. Génération IA verrouillée
+## 4. Génération IA verrouillée _(implémenté)_
 
-La génération IA n'a **aucune route publique** : c'est un service backend (`src/backend/ai/`) appelable
-uniquement depuis l'espace admin (route `/api/admin/ai` ou Server Action admin), donc derrière le
-middleware. Le verrou est **structurel** — il n'existe pas de porte d'entrée publique à fermer.
+L'assistance IA (génération de questionnaire par prompt + correcteur orthographique) n'a **aucune
+route publique** : c'est un service backend (`src/backend/ai/`) exposé uniquement par deux Route
+Handlers **sous `/api/admin/ai/*`**, donc derrière le middleware. Le verrou est **structurel** — il
+n'existe pas de porte d'entrée publique à fermer.
 
-- La clé `ANTHROPIC_API_KEY` reste **côté serveur**, jamais exposée au client.
+| Route | Effet |
+|-------|-------|
+| `POST /api/admin/ai/generate` | `{ prompt }` → questionnaire généré et persisté → 201. |
+| `POST /api/admin/ai/proofread` | `{ text }` → `{ corrected }` (correction orthographique/grammaticale). |
+
+- **Défense en profondeur** : en plus du middleware, chaque handler **rejoue la vérification de
+  session** via `requireAdmin` (`src/backend/auth/requireAdmin.ts`, qui réutilise `verifySessionToken`
+  + `SESSION_COOKIE_NAME`). Une session absente/invalide → **401**, sans qu'aucun appel à l'IA ne
+  soit déclenché — ces routes engageant un appel externe coûteux, on ne se repose pas sur le seul
+  middleware.
+- La clé `ANTHROPIC_API_KEY` reste **côté serveur** (lue dans `aiClient.ts`), jamais exposée au
+  client. Si elle est absente, le service échoue clairement (`MissingApiKeyError` → **503**), sans
+  fuite de détail.
 - La sortie du modèle est **validée par Zod** (`generatedFormSchema`, `src/shared/schemas/form.ts`)
-  avant toute insertion : un retour non conforme est rejeté, pas inséré.
+  dans une fonction **pure** (`aiMapper.extractGeneratedForm`) avant toute insertion : un retour non
+  conforme (JSON absent/invalide, schéma non respecté) est **rejeté, pas inséré** (`AiGenerationError`
+  → **502**). Un **seul retry** est tenté côté service avant d'abandonner.
+- Le prompt et le texte à corriger sont eux-mêmes **validés** (`aiGenerateSchema` / `aiProofreadSchema` :
+  non vides, longueur bornée) avant tout appel — une entrée vide ou trop longue → **400**.
 - Le formulaire généré est créé en `status = DRAFT`, `generatedByAi = true`, `aiPrompt` renseigné
   (traçabilité) ; il n'est public qu'après revue + publication par l'admin.
 
 ## 5. Validation des entrées
 
 - **Schémas Zod partagés** (`src/shared/schemas/`) appliqués **côté serveur** sur toute entrée :
-  soumission publique de réponses et prompt IA. La validation client n'est qu'un confort UX.
+  soumission publique de réponses, prompt de génération IA (`aiGenerateSchema`) et texte à corriger
+  (`aiProofreadSchema`). La validation client n'est qu'un confort UX.
 - À la soumission : vérification que les questions `required` sont remplies, que les valeurs
   correspondent au `type`, et que les options sélectionnées **appartiennent bien** à la question
   ciblée du bon `Form` (pas d'injection d'`optionId` arbitraire).
