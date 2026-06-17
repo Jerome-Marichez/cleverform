@@ -44,6 +44,24 @@ sur le middleware.
 - **Pas de fuite** : le public ne reçoit jamais l'`id` interne du formulaire ni les `Response`/`Answer`
   d'autrui. Les services publics ne sélectionnent que les champs nécessaires au rendu/à la soumission.
 
+### Mise en œuvre côté backend (domaine `response`)
+
+Les routes publiques s'appuient sur `src/backend/response/` :
+
+- **404 sur non publié** : `responseRepository.findPublishedFormByPublicId` filtre `status = PUBLISHED`
+  directement dans la requête. Un `Form` inexistant, en brouillon ou clos remonte `null` → le service
+  lève `FormNotFoundError` → `GET /api/public/forms/[publicId]` répond **404** avec un message
+  **générique** (« Questionnaire introuvable. ») : on ne révèle pas l'existence d'un brouillon.
+- **Non-exposition de l'`id` interne** : `responseMapper.toPublicForm` construit le DTO `PublicForm`
+  **sans recopier** `Form.id` (ni `formId`/`questionId` de structure) — seul `publicId` sort. Fonction
+  pure, couverte par un test qui échoue si l'`id` interne apparaît dans le DTO sérialisé.
+- **Soumission write-only** : `POST /api/public/forms/[publicId]/responses` valide l'entrée via
+  `buildSubmitResponseSchema(form.questions)` (forme + règles par type + questions obligatoires +
+  rejet des `questionId` inconnus) avant insertion ; il ne renvoie aucune réponse d'autrui (juste
+  l'`id`/horodatage de la soumission créée, `201`). Une entrée invalide → **400**.
+- **Lecture réservée à l'admin** : `GET /api/admin/forms/[id]/responses` (par `id` interne) est sous
+  la garde admin du middleware (`/api/admin/*`) ; le public n'a aucune route de lecture des réponses.
+
 ## 4. Génération IA verrouillée
 
 La génération IA n'a **aucune route publique** : c'est un service backend (`src/backend/ai/`) appelable

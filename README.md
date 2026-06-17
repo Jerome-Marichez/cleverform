@@ -49,10 +49,11 @@ src/
     (admin)/      # espace ADMIN protégé : Form Builder, Response Viewer, génération IA
     f/[publicId]/ # Form Responder PUBLIC (jeton opaque, formulaires publiés uniquement)
     api/
-      admin/    #   routes BACKEND protégées : génération IA, opérations builder
-      public/   #   routes BACKEND publiques : soumission de réponses (write-only)
+      admin/    #   routes BACKEND protégées : génération IA, opérations builder, lecture des réponses
+      public/   #   routes BACKEND publiques : lecture d'un form publié + soumission de réponses (write-only)
   frontend/     # FRONTEND  — présentation : composants, hooks, vues
   backend/      # BACKEND   — métier : services, accès données (Prisma), intégration IA, session admin
+    response/   #   domaine Réponse : repository (Prisma), service (use-cases), mapper pur (DTO + agrégation)
   shared/       # PARTAGÉ   — domaine : entités, types, schémas Zod (framework-agnostic)
     schemas/    #   schémas Zod & types inférés : CRUD Builder, soumission publique, login, DTO publics
 ```
@@ -61,6 +62,12 @@ Les **schémas de validation** (Zod) vivent dans `src/shared/schemas/` (réexpor
 `@/shared/schemas`) : entrées du Builder (`createFormSchema`, `updateFormSchema`, `reorderSchema`),
 soumission publique (`submitResponseSchema` + règles par type), connexion (`loginSchema`) et DTO
 publics (`PublicForm`, sans `id` interne). Détail et règles par type : [`docs/data-model.md`](./docs/data-model.md).
+
+Le **domaine Réponse** (`src/backend/response/`) sert un questionnaire publié au Responder
+(`GET /api/public/forms/[publicId]`), enregistre les soumissions validées
+(`POST /api/public/forms/[publicId]/responses`, write-only) et expose l'agrégat au Response Viewer
+admin (`GET /api/admin/forms/[id]/responses`). Le mapping DTO et l'agrégation sont une logique
+**pure** (testée sans base) ; un `Form` non publié renvoie 404 et l'`id` interne n'est jamais exposé.
 
 ### Accès & sécurité
 

@@ -186,6 +186,48 @@ Ils n'exposent **jamais** l'`id` interne du `Form` (seul `publicId`), ni les cha
 (`aiPrompt`, `generatedByAi`, timestamps) ni les `formId`/`questionId` de structure — uniquement
 ce qui est nécessaire au remplissage. Voir [`security.md`](./security.md).
 
+## Flux d'une réponse (soumission → lecture → agrégation)
+
+Le domaine **Response** (`src/backend/response/`) orchestre tout le cycle de vie d'une
+soumission. Trois couches, dépendances vers le bas :
+
+| Fichier | Rôle | Pur ? |
+|---------|------|-------|
+| `responseRepository.ts` | accès Prisma (`db`) : chargement du `Form` publié, insertion `Response`+`Answer`, lecture des réponses | non (base) |
+| `responseService.ts` | use-cases (validation, orchestration), erreurs **typées** | non |
+| `responseMapper.ts` | mapping DTO public + **agrégation** | **oui** (testable sans base) |
+
+### Soumission (public, write-only)
+
+1. **Chargement** du `Form` par `publicId`, filtré `status = PUBLISHED` (sinon 404).
+2. **Validation** via `buildSubmitResponseSchema(form.questions)` : forme brute, règles par
+   type, présence des questions obligatoires, rejet des `questionId` inconnus.
+3. **Persistance** : création de la `Response` et de ses `Answer` (nested write atomique).
+   `Answer.value` porte la réponse scalaire ; `Answer.selectedOptions` **connecte** les `Option`
+   choisies (relation many-to-many) pour les types à choix.
+
+### Lecture & agrégation (admin, Response Viewer)
+
+`aggregateResponses(form, responses)` produit, **par question** (dans l'ordre `order`), un
+agrégat discriminé par `kind` :
+
+| Famille de type | `kind` | Contenu |
+|-----------------|--------|---------|
+| `SINGLE_CHOICE`, `MULTIPLE_CHOICE` | `choice` | compteur par option (toutes les options présentes, même à 0) + `answersCount` |
+| `RATING` | `rating` | `average` (moyenne, `null` si aucune note) + `answersCount` |
+| `SHORT_TEXT`, `LONG_TEXT`, `NUMBER`, `EMAIL`, `DATE` | `value` | liste des valeurs non vides saisies + `answersCount` |
+
+L'agrégat porte aussi `publicId`, `title` et `totalResponses` (nombre de soumissions). Fonction
+**pure** : aucune dépendance base/réseau, testée sur fixtures.
+
+### Routes API (Route Handlers)
+
+| Méthode & route | Acteur | Effet |
+|-----------------|--------|-------|
+| `GET /api/public/forms/[publicId]` | public | DTO `PublicForm` du questionnaire publié (404 sinon) |
+| `POST /api/public/forms/[publicId]/responses` | public | enregistre une soumission validée (`201`) |
+| `GET /api/admin/forms/[id]/responses` | admin | `{ aggregate, responses }` (par `id` interne) |
+
 ## Surface de données par acteur
 
 | Acteur | Lecture | Écriture |
