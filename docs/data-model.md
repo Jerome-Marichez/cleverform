@@ -244,6 +244,13 @@ En **Prisma 7**, la `datasource` du schéma ne porte **plus** l'URL de connexion
 runtime se connecte via un **driver adapter** (`@prisma/adapter-pg`, dans `src/backend/db.ts`),
 et le **CLI** (migrations) lit sa configuration dans **`prisma.config.ts`** (à la racine).
 
+> **Initialisation paresseuse du client.** Le client Prisma exporté (`db`) est un **Proxy** :
+> le vrai `PrismaClient` (et donc la lecture de `DATABASE_URL`) n'est créé **qu'à la première
+> requête** (`db.form.findMany`, `db.$transaction`…), pas à l'import du module. Cela permet à
+> `next build` — qui importe les routes API **sans base de données** pour collecter les pages —
+> de réussir sans `DATABASE_URL`. L'URL n'est donc exigée qu'au **runtime**, à la première
+> utilisation effective.
+
 ### Deux connexions, deux usages
 
 | Variable | Connexion | Usage |

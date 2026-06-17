@@ -1,20 +1,39 @@
 import { PrismaClient } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 
-// Prisma 7 : la datasource ne porte plus l'URL — la connexion passe par un
-// driver adapter fourni au constructeur du client. Voir docs/data-model.md.
-const connectionString = process.env.DATABASE_URL;
-if (!connectionString) {
-  throw new Error("DATABASE_URL est manquante (voir .env.example).");
-}
-
-const adapter = new PrismaPg({ connectionString });
-
-// Client Prisma en singleton (évite la saturation des connexions en dev/serverless).
+// Prisma 7 : la connexion passe par un driver adapter fourni au client.
+// L'initialisation est PARESSEUSE : la DATABASE_URL n'est exigée qu'à la
+// première utilisation (requête), pas à l'import du module — sinon `next build`
+// (qui importe les routes sans base) échouerait. Voir docs/data-model.md.
 const globalForPrisma = globalThis as unknown as { prisma?: PrismaClient };
 
-export const db = globalForPrisma.prisma ?? new PrismaClient({ adapter });
-
-if (process.env.NODE_ENV !== "production") {
-  globalForPrisma.prisma = db;
+function createPrismaClient(): PrismaClient {
+  const connectionString = process.env.DATABASE_URL;
+  if (!connectionString) {
+    throw new Error("DATABASE_URL est manquante (voir .env.example).");
+  }
+  const adapter = new PrismaPg({ connectionString });
+  return new PrismaClient({ adapter });
 }
+
+function getPrismaClient(): PrismaClient {
+  if (globalForPrisma.prisma) {
+    return globalForPrisma.prisma;
+  }
+  const client = createPrismaClient();
+  // Singleton (évite la saturation des connexions en dev/serverless).
+  if (process.env.NODE_ENV !== "production") {
+    globalForPrisma.prisma = client;
+  }
+  return client;
+}
+
+// Proxy : le vrai client n'est créé qu'au premier accès à une propriété de `db`
+// (ex. `db.form.findMany`), donc l'import seul ne requiert pas DATABASE_URL.
+export const db = new Proxy({} as PrismaClient, {
+  get(_target, prop, receiver) {
+    const client = getPrismaClient();
+    const value = Reflect.get(client, prop, receiver);
+    return typeof value === "function" ? (value.bind(client) as unknown) : value;
+  },
+});
