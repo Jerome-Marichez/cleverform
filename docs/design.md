@@ -45,6 +45,10 @@ Le remplissage proprement dit est délégué au Client Component `ResponderForm`
 
 `src/frontend/components/DottedBackground.tsx` rend un **motif de points verts subtil** via un `radial-gradient` répété (`backgroundImage` + `backgroundSize`), sans image ni dépendance externe. La couleur des points dérive du **`secondary` du thème** (vert lime) appliqué à **faible opacité** — légèrement renforcée en mode sombre pour rester lisible : le motif est donc **theme-aware**. Un léger fondu vers les bords (`maskImage`) adoucit le rendu. La couche est purement décorative : `aria-hidden`, `pointerEvents: "none"`, positionnée **derrière** le contenu (`position: absolute`). Elle s'utilise soit en overlay (sans enfant), soit comme conteneur (le contenu est alors empilé au-dessus).
 
+**Halo interactif (« spotlight »).** Par défaut (`interactive`, vrai), une **seconde couche** de points plus opaques (≈ 0,45 en clair, ≈ 0,50 en sombre) se révèle dans un disque qui **suit le curseur** : les points autour de la souris s'« éclairent ». L'effet est obtenu sans librairie via un `mask-image` en `radial-gradient` centré sur deux **variables CSS** (`--mx`/`--my`) mises à jour au `mousemove` et **throttlées par `requestAnimationFrame`** — donc **sans re-render React** (écriture directe sur le DOM). L'écoute se fait sur `window` ; la couche reste `aria-hidden` et `pointerEvents: "none"`. Le halo s'estompe en douceur quand le curseur quitte la fenêtre.
+
+**Accessibilité.** Le halo n'est **pas monté** si l'utilisateur a activé `prefers-reduced-motion` (via le hook `useReducedMotion`, voir [`accessibility.md`](./accessibility.md)) ou si `interactive={false}` : on retombe alors sur le **motif statique** d'origine, sans écouteur ni animation.
+
 ### Icônes animées (lordicon auto-hébergé)
 
 Les icônes animées s'appuient sur `@lordicon/react` (moteur `lottie-web`) avec des fichiers **Lottie JSON stockés localement** dans `public/icons/` (`create.json`, `share.json`, `analyze.json`). **Aucune dépendance CDN ni réseau à l'exécution** : les animations restent disponibles hors-ligne, en Docker et en CI (portabilité).
