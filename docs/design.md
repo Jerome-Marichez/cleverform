@@ -9,7 +9,7 @@
 ## Parcours utilisateur
 
 0. **Administrateur** : se connecte à l'espace admin (page de connexion ; admin unique). Sans session valide, `/admin/*` redirige vers la connexion.
-1. **Administrateur** : crée / configure un questionnaire (Form Builder) — ajout, réordonnancement (drag & drop), types de questions, options.
+1. **Administrateur** : arrive sur le **tableau de bord** (`/admin`) qui liste tous ses questionnaires, puis crée / configure un questionnaire (Form Builder) — ajout, réordonnancement (drag & drop), types de questions, options.
 2. **Répondant** : remplit le formulaire public (Form Responder) via son identifiant opaque `/f/[publicId]` (formulaires publiés uniquement).
 3. **Administrateur** : consulte les réponses (Response Viewer) — liste et agrégats.
 4. **Génération IA** : depuis l'espace admin, saisit un prompt (sujet), obtient un questionnaire pré-rempli (brouillon), modifiable avant publication.
@@ -46,7 +46,23 @@ Le wrapper `src/frontend/components/LordIcon.tsx` :
 
 Le lecteur proprement dit est isolé dans `LordIconPlayer.tsx` (chargé dynamiquement) pour cantonner l'import navigateur-only.
 
-## Response Viewer (visualisation des réponses)
+## Espace d'administration
+
+### Coquille admin (`src/app/admin/layout.tsx`)
+
+Toutes les pages sous `/admin` partagent une même **coquille** (Server Component) : un `AppHeader` portant la **marque cliquable** (retour au tableau de bord), un **bouton « Déconnexion »** (`LogoutButton`, Client Component : `POST /api/auth/logout` puis redirection vers `/login`) et la **bascule de thème**, le tout au-dessus du contenu de page dans un `PageContainer`. Ce layout est le **seul** porteur de l'en-tête admin : les pages enfants ne le ré-ajoutent pas. L'accès est protégé en amont par le `middleware` (voir [`security.md`](./security.md)).
+
+### Tableau de bord — liste des questionnaires (`src/app/admin/page.tsx`)
+
+Page d'accueil de l'admin (Server Component). Elle lit les questionnaires **directement** via la couche backend (`listForms()`, sans appel HTTP) et les affiche en **grille de cartes** responsive (`FormCard` réutilisé) : titre, statut (brouillon / publié / clôturé), nombre de questions et date de modification. Un clic sur une carte ouvre l'**éditeur** du questionnaire (`/admin/forms/[id]/edit`). En l'absence de questionnaire, un **état vide** (`EmptyState`) invite à en créer un.
+
+Les interactions sont déléguées à des **composants clients** dédiés (`src/frontend/components/admin/`) :
+
+- **`NewFormButton` + `CreateFormDialog`** : bouton « Nouveau questionnaire » ouvrant une boîte de dialogue (titre + description). À la validation, `POST /api/admin/forms` (le questionnaire est amorcé avec une première question, requise par le schéma de création) puis redirection vers l'éditeur. Le titre est requis (validation inline) ; états de chargement et d'erreur gérés.
+- **`AdminFormCard` + `FormCardActions`** : menu d'actions superposé à chaque carte — **publier** (brouillon → publié) ou **clôturer** (publié → clôturé) selon le statut, et **supprimer** (avec **confirmation** explicite rappelant le titre). Après chaque mutation réussie, la liste est rafraîchie (`router.refresh()`) et un **toast** (`StatusSnackbar`) confirme l'action ; les erreurs sont signalées de la même façon.
+- **Hook `useFormMutations`** (`src/frontend/hooks/`) : encapsule les appels `fetch` (création, changement de statut, suppression) et expose un état transverse `pending` / `error`, pour garder les composants de présentation simples.
+
+### Response Viewer (visualisation des réponses)
 
 La page admin `src/app/admin/forms/[id]/responses/page.tsx` (Server Component, sous la garde admin du middleware) visualise les réponses **agrégées** d'un questionnaire. Elle charge l'agrégat directement côté serveur (`getFormResponsesAggregated(id)` — aucune route appelée depuis le client), renvoie un **404** (`notFound()`) si le questionnaire n'existe pas, et affiche l'**état vide** « Aucune réponse pour le moment » tant qu'aucune soumission n'a été collectée. L'en-tête rappelle le titre, le **nombre total de réponses** et propose un accès à l'édition du questionnaire.
 
