@@ -121,6 +121,15 @@ restant **write-only** sur les réponses. La génération IA n'a aucune route pu
 est limité en débit par IP (anti-brute-force) et les soumissions publiques sont bornées en taille.
 Détails : [`docs/security.md`](./docs/security.md).
 
+### RGPD — protection des données
+
+La collecte côté répondant est conforme **RGPD** : une **mention de confidentialité**
+(`PrivacyNotice`) informe le répondant (finalité, responsable, durée de conservation, droits) et une
+**case de consentement obligatoire** précède l'envoi. Le principe de **minimisation** s'applique
+(aucun cookie, traceur, IP ou user-agent côté public). Le **registre des activités de traitement**
+(RGPD art. 30) est tenu dans [`docs/rgpd.md`](./docs/rgpd.md) et exporté au format réutilisable
+dans [`docs/rgpd-registre.csv`](./docs/rgpd-registre.csv). Détails : [`docs/rgpd.md`](./docs/rgpd.md).
+
 ## Conventions de nommage
 
 - **PascalCase** : composants React, types, interfaces, enums (+ leurs fichiers) — ex. `FormBuilder.tsx`, `QuestionType`.
@@ -184,6 +193,7 @@ La documentation détaillée vit dans le dossier [`docs/`](./docs) :
 - [Storybook](./docs/storybook.md) — visualisation des composants, thème clair/sombre, conventions des stories.
 - [Modèle de données](./docs/data-model.md) — entités (`Form`, `Question`, `Response`, `Answer`) et relations.
 - [Sécurité & accès](./docs/security.md) — auth admin unique, cloisonnement admin/public, verrou IA, validation.
+- [RGPD](./docs/rgpd.md) — conformité, registre des activités de traitement (art. 30), [export CSV](./docs/rgpd-registre.csv).
 - [Tests](./docs/testing.md) — stratégie unitaires / intégration / e2e-système et couverture des composants.
 - [CI / CD](./docs/ci-cd.md) — CI à deux niveaux (dev rapide / main long) et déploiement.
 - [Docker](./docs/docker.md) — portabilité (anti vendor lock-in), build/run/disponibilité.
