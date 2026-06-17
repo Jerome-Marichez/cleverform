@@ -113,6 +113,18 @@ migrations par l'URL **directe** (`DATABASE_URL_UNPOOLED`), configurées dans `p
 Répartition **dev / preprod / prod** ↔ branches git : voir [`docs/architecture.md`](./docs/architecture.md) ;
 détail Prisma & migrations : [`docs/data-model.md`](./docs/data-model.md).
 
+### Variables d'environnement requises
+
+| Variable | Rôle |
+|----------|------|
+| `DATABASE_URL` / `DATABASE_URL_UNPOOLED` | Connexion Neon (runtime poolé / migrations directes). |
+| `ANTHROPIC_API_KEY` | Clé IA (serveur uniquement). |
+| `ADMIN_PASSWORD` | Mot de passe de l'**administrateur unique** (comparé en temps constant). |
+| `SESSION_SECRET` | Secret HMAC de signature du **cookie de session** admin. |
+
+L'authentification admin (cookie de session signé HMAC, middleware sur `/admin/*` et `/api/admin/*`,
+page `/login`) repose sur `ADMIN_PASSWORD` et `SESSION_SECRET` — voir [`docs/security.md`](./docs/security.md).
+
 ## Documentation
 
 La documentation détaillée vit dans le dossier [`docs/`](./docs) :
