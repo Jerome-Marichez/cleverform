@@ -25,11 +25,12 @@ Application web fullstack permettant de :
 | ORM | **Prisma 7** (driver adapter `@prisma/adapter-pg`) |
 | Conteneurisation | **Docker** (portabilité / compatibilité ; livraison via Vercel) |
 | Commandes | **Make** (interface agnostique) |
-| UI | **MUI (Material UI)** |
+| UI | **MUI (Material UI)** — thème clair/sombre, détection système |
+| Visualisation des composants | **Storybook** (rendu/doc des composants) |
 | Formulaires & validation | **React Hook Form + Zod** |
 | Drag & drop (builder) | **dnd-kit** |
 | IA | **Claude Haiku 4.5** (`@anthropic-ai/sdk`), sortie structurée validée Zod |
-| Tests | **Cypress** (Component + E2E + API) |
+| Tests | **Jest** (unitaire + intégration) + **Cypress** (e2e + système) |
 | CI / CD | **GitHub Actions** + **Vercel** |
 
 Détails et justifications : [`docs/architecture.md`](./docs/architecture.md).
@@ -37,7 +38,7 @@ Détails et justifications : [`docs/architecture.md`](./docs/architecture.md).
 ## Architecture
 
 Séparation claire **frontend / backend** (même dans cette application unique Next.js),
-en couches dépendant du `core` :
+en couches dépendant du `shared` :
 
 ```
 src/
@@ -48,9 +49,9 @@ src/
     api/
       admin/    #   routes BACKEND protégées : génération IA, opérations builder
       public/   #   routes BACKEND publiques : soumission de réponses (write-only)
-  interface/    # FRONTEND  — présentation : composants, hooks, vues
-  service/      # BACKEND   — métier : services, accès données (Prisma), intégration IA, session admin
-  core/         # PARTAGÉ   — domaine : entités, types, schémas Zod (framework-agnostic)
+  frontend/     # FRONTEND  — présentation : composants, hooks, vues
+  backend/      # BACKEND   — métier : services, accès données (Prisma), intégration IA, session admin
+  shared/       # PARTAGÉ   — domaine : entités, types, schémas Zod (framework-agnostic)
 ```
 
 ### Accès & sécurité
@@ -66,10 +67,10 @@ restant **write-only** sur les réponses. La génération IA n'a aucune route pu
 
 - **PascalCase** : composants React, types, interfaces, enums (+ leurs fichiers) — ex. `FormBuilder.tsx`, `QuestionType`.
 - **camelCase** : variables, fonctions, hooks (+ fichiers non-composants) — ex. `formService.ts`, `useFormBuilder.ts`.
-- **Dossiers** : minuscules — `service/`, `interface/`, `core/`.
+- **Dossiers** : minuscules — `backend/`, `frontend/`, `shared/`.
 
-Par couche : `core/` modèles/types en PascalCase + schémas Zod en camelCase ;
-`service/` fichiers/fonctions en camelCase ; `interface/` composants en PascalCase, hooks en camelCase.
+Par couche : `shared/` modèles/types en PascalCase + schémas Zod en camelCase ;
+`backend/` fichiers/fonctions en camelCase ; `frontend/` composants en PascalCase, hooks en camelCase.
 
 ## Commandes (Make)
 
@@ -80,12 +81,29 @@ make install        # dépendances
 make dev            # développement local
 make build          # build de production
 make lint typecheck # qualité
+make db-deploy      # applique les migrations Prisma (preprod/prod/CI)
+make db-status      # état des migrations vs base
 make docker-up      # app + Postgres en local (Docker, compatibilité)
+make storybook      # visualisation des composants (Storybook, port 6006)
 make help           # liste toutes les cibles
 ```
 
 > Livraison via **Vercel** ; **Docker** sert la portabilité / les vérifications de compatibilité
 > (voir [`docs/docker.md`](./docs/docker.md)).
+
+## Base de données & configuration locale
+
+La base **PostgreSQL (Neon)** est provisionnée via l'**intégration Marketplace Vercel**. En local :
+
+1. `cp .env.example .env`, puis renseigner les **secrets applicatifs** (`ANTHROPIC_API_KEY`,
+   `ADMIN_PASSWORD`, `SESSION_SECRET`).
+2. `make db-pull` récupère les **variables Neon** dans `.env.local` (`vercel env pull`).
+3. `make db-deploy` applique les migrations, `make db-status` vérifie l'état.
+
+En **Prisma 7**, la connexion runtime passe par un *driver adapter* (`DATABASE_URL` poolée) et les
+migrations par l'URL **directe** (`DATABASE_URL_UNPOOLED`), configurées dans `prisma.config.ts`.
+Répartition **dev / preprod / prod** ↔ branches git : voir [`docs/architecture.md`](./docs/architecture.md) ;
+détail Prisma & migrations : [`docs/data-model.md`](./docs/data-model.md).
 
 ## Documentation
 
@@ -93,6 +111,7 @@ La documentation détaillée vit dans le dossier [`docs/`](./docs) :
 
 - [Architecture](./docs/architecture.md) — stack, structure, choix techniques et arbitrages.
 - [Design & UX](./docs/design.md) — parcours utilisateur, composants, états de l'interface.
+- [Storybook](./docs/storybook.md) — visualisation des composants, thème clair/sombre, conventions des stories.
 - [Modèle de données](./docs/data-model.md) — entités (`Form`, `Question`, `Response`, `Answer`) et relations.
 - [Sécurité & accès](./docs/security.md) — auth admin unique, cloisonnement admin/public, verrou IA, validation.
 - [Tests](./docs/testing.md) — stratégie unitaires / intégration / e2e-système.

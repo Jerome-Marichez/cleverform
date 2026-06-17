@@ -5,15 +5,28 @@ PR vers `dev` ; les checks longs sont réservés à la mise en production (PR ve
 
 ## Workflows GitHub Actions
 
-| Workflow | Déclencheur | Jobs |
-|----------|-------------|------|
-| `.github/workflows/ci-dev.yml` | **PR → `dev`** | `Lint & types` ; `Tests unitaires & intégration` (Cypress) |
-| `.github/workflows/ci-main.yml` | **PR → `main`** | `Build local (next build)` ; `Docker — build/run/disponibilité` ; `Tests e2e (front)` ; `Tests système (back)` |
+Un **fichier par check** (un workflow = un job), pour rester lisible. Le modèle reste
+**à deux niveaux** via le déclencheur : préfixe `ci-dev-*` (PR → `dev`, rapide) et
+`ci-main-*` (PR → `main`, long).
+
+Chaque workflow exécute ses étapes via les **cibles Make** (`make ci-install`, `make lint`,
+`make test-unit`, `make build`, `make docker-build`…) : l'interface d'exécution est **la même
+en local et en CI** (voir [`tooling.md`](./tooling.md)). `make ci-install` fait un `npm ci`
+(install reproductible depuis le lockfile).
+
+| Workflow | Déclencheur | Job |
+|----------|-------------|-----|
+| `.github/workflows/ci-dev-lint.yml` | **PR → `dev`** | `Lint & types` |
+| `.github/workflows/ci-dev-tests.yml` | **PR → `dev`** | `Tests unitaires & intégration` (Jest) |
+| `.github/workflows/ci-main-build.yml` | **PR → `main`** | `Build local (next build)` |
+| `.github/workflows/ci-main-docker.yml` | **PR → `main`** | `Docker — build/run/disponibilité` |
+| `.github/workflows/ci-main-e2e.yml` | **PR → `main`** | `Tests e2e (front)` |
+| `.github/workflows/ci-main-system.yml` | **PR → `main`** | `Tests système (back)` |
 
 ### PR → `dev` (rapide)
 
 - ✅ **Lint** (ESLint) + **typecheck** (`tsc --noEmit`)
-- ✅ Tests **unitaires** + **intégration** (Cypress)
+- ✅ Tests **unitaires** + **intégration** (Jest)
 
 ### PR → `main` (long, mise en production)
 
@@ -30,21 +43,46 @@ PR vers `dev` ; les checks longs sont réservés à la mise en production (PR ve
 - **Livraison via Vercel** (front + back serverless) + **PostgreSQL** (Neon). Docker n'est pas la
   cible de livraison (Vercel l'est) mais garantit la portabilité.
 - **Preview URL** par PR ; **production** sur `main`.
+- Le client **Prisma** est généré au build via le script **`build`** (`prisma generate && next build`),
+  afin que `next build` dispose des types générés (sans base requise à la génération). Sur Vercel,
+  qui lance `npm run build`, la génération est ainsi automatique ; le Dockerfile l'obtient via la
+  même commande de build.
 
 ### Variables d'environnement
 
-| Variable | Rôle |
-|----------|------|
-| `DATABASE_URL` | Connexion PostgreSQL **poolée** (runtime ; lue par le driver adapter Prisma) |
-| `DIRECT_URL` | Connexion **directe** (migrations) |
-| `ANTHROPIC_API_KEY` | Clé API Claude (serveur uniquement) |
-| `ADMIN_PASSWORD` / `SESSION_SECRET` | Authentification de l'espace admin (voir `security.md`) |
+La base **Neon** est provisionnée via l'**intégration Marketplace Vercel**, qui injecte
+automatiquement les variables de connexion dans les trois environnements (Production / Preview /
+Development) — voir la répartition par branche dans [`architecture.md`](./architecture.md).
+
+| Variable | Rôle | Source |
+|----------|------|--------|
+| `DATABASE_URL` | Connexion PostgreSQL **poolée** (runtime ; lue par le driver adapter Prisma) | Neon (auto) |
+| `DATABASE_URL_UNPOOLED` | Connexion **directe** (migrations Prisma) — alias accepté : `DIRECT_URL` | Neon (auto) |
+| `ANTHROPIC_API_KEY` | Clé API Claude (serveur uniquement) | à définir |
+| `ADMIN_PASSWORD` / `SESSION_SECRET` | Authentification de l'espace admin (voir `security.md`) | à définir |
+
+Les **migrations** sont appliquées avec `make db-deploy` (`prisma migrate deploy`) — sur la base
+de l'environnement ciblé — après mise à jour des variables.
+
+### Déploiements Preview & branches Neon
+
+Avec le **preview branching** activé (voir [`architecture.md`](./architecture.md)), chaque
+déploiement **Preview** reçoit les variables de connexion de **sa** branche Neon, **injectées au
+déploiement via webhook** (elles surchargent les variables Preview du projet, le temps de ce
+déploiement, et ne sont pas visibles dans les réglages). La branche étant copiée depuis la prod,
+elle **hérite du schéma** — rien à faire pour la plupart des PR.
+
+> Pour une PR **introduisant une nouvelle migration**, la faire appliquer à la branche Preview en
+> définissant la *Build Command* Vercel sur `prisma migrate deploy && npm run build`
+> (Settings → Build and Deployment). Ne **pas** mettre `migrate deploy` dans le script npm `build` :
+> il casserait la CI et le build Docker, qui s'exécutent **sans base**.
 
 ## Outils
 
 | Étape | Outil |
 |-------|-------|
-| CI | **GitHub Actions** (2 workflows) |
+| CI | **GitHub Actions** (un workflow par check) |
+| Interface de commandes | **Make** (mêmes cibles en local et en CI) |
 | Conteneurisation | **Docker** (portabilité, healthcheck) |
 | Déploiement | **Vercel** |
 | Base de données | **PostgreSQL** (Neon) |

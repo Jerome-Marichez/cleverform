@@ -27,5 +27,5 @@ make docker-down    # arrête compose
 
 ## CI
 
-Le job **Docker** de `ci-main.yml` (PR → `main`) construit l'image, lance le conteneur et
+Le workflow **`ci-main-docker.yml`** (PR → `main`) construit l'image, lance le conteneur et
 vérifie la **disponibilité** (`curl` sur `/`). Voir [`ci-cd.md`](./ci-cd.md).

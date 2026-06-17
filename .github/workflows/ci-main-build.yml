@@ -1,0 +1,21 @@
+name: CI main — Build local
+
+# Check de mise en production (PR `dev` -> `main`) : build local Next.js.
+# Commandes passées via Make (interface unique du projet — voir docs/tooling.md).
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  build:
+    name: Build local (next build)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: make ci-install
+      - run: make prisma-generate
+      - run: make build

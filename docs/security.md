@@ -15,7 +15,7 @@ Pas de table `User`, pas de `Form.ownerId`. Un seul administrateur :
   En production, stocker de préférence un **hash** (argon2/bcrypt) plutôt que le mot de passe en clair.
 - Session matérialisée par un **cookie signé** (HMAC avec `SESSION_SECRET`), avec les attributs :
   `httpOnly` (inaccessible au JS), `Secure` (HTTPS uniquement), `SameSite=Lax`, expiration bornée.
-- Logique isolée dans `src/service/auth/adminSession.ts` (création + vérification du jeton).
+- Logique isolée dans `src/backend/auth/adminSession.ts` (création + vérification du jeton).
 
 > Arbitrage : l'admin unique suffit au périmètre du cas pratique sans sur-ingénierie. L'évolution
 > vers une vraie gestion de comptes (table `User`, rôles, `Form.ownerId`) ne touche pas au cœur du modèle.
@@ -28,7 +28,7 @@ Le middleware Next.js exige une session admin valide sur :
 - `/api/admin/*` — Route Handlers admin (génération IA, opérations builder).
 
 Sans session valide → redirection vers la page de connexion (UI) ou `401` (API). La défense est
-**aussi rejouée côté service/Server Action** (defense-in-depth) : on ne se repose pas uniquement
+**aussi rejouée côté backend/Server Action** (defense-in-depth) : on ne se repose pas uniquement
 sur le middleware.
 
 ## 3. Surface publique minimale
@@ -46,19 +46,19 @@ sur le middleware.
 
 ## 4. Génération IA verrouillée
 
-La génération IA n'a **aucune route publique** : c'est un service (`src/service/ai/`) appelable
+La génération IA n'a **aucune route publique** : c'est un service backend (`src/backend/ai/`) appelable
 uniquement depuis l'espace admin (route `/api/admin/ai` ou Server Action admin), donc derrière le
 middleware. Le verrou est **structurel** — il n'existe pas de porte d'entrée publique à fermer.
 
 - La clé `ANTHROPIC_API_KEY` reste **côté serveur**, jamais exposée au client.
-- La sortie du modèle est **validée par Zod** (`generatedFormSchema`, `src/core/schemas/form.ts`)
+- La sortie du modèle est **validée par Zod** (`generatedFormSchema`, `src/shared/schemas/form.ts`)
   avant toute insertion : un retour non conforme est rejeté, pas inséré.
 - Le formulaire généré est créé en `status = DRAFT`, `generatedByAi = true`, `aiPrompt` renseigné
   (traçabilité) ; il n'est public qu'après revue + publication par l'admin.
 
 ## 5. Validation des entrées
 
-- **Schémas Zod partagés** (`src/core/schemas/`) appliqués **côté serveur** sur toute entrée :
+- **Schémas Zod partagés** (`src/shared/schemas/`) appliqués **côté serveur** sur toute entrée :
   soumission publique de réponses et prompt IA. La validation client n'est qu'un confort UX.
 - À la soumission : vérification que les questions `required` sont remplies, que les valeurs
   correspondent au `type`, et que les options sélectionnées **appartiennent bien** à la question

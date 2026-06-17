@@ -11,12 +11,15 @@ voie immédiatement *ce qui* est testé : l'**interface** ou le **serveur**.
 
 | Niveau | Côté | Objet | Outil |
 |--------|------|-------|-------|
-| **unitaire** | frontend **+** backend | composants/hooks/utils (front) ; schémas Zod, parsing IA, logique pure (back) | **Cypress** Component Testing (front) ; specs unitaires (back) |
-| **integration** | frontend **+** backend | composant + interactions, fixtures de données (front) ; Server Actions / Route Handlers + Prisma (back) | **Cypress** (Component + `cy.request`, BDD de test) |
+| **unitaire** | frontend **+** backend | composants/hooks/utils (front) ; schémas Zod, parsing IA, logique pure (back) | **Jest** (jsdom + Testing Library côté front ; node côté back) |
+| **integration** | frontend **+** backend | composant + interactions, fixtures de données (front) ; Server Actions / Route Handlers + Prisma (back) | **Jest** (jsdom / node, fixtures et BDD de test) |
 | **e2e** | **frontend uniquement** | parcours navigateur complet (Builder → Responder → Viewer) | **Cypress** E2E |
 | **systeme** | **backend uniquement** | scénarios système côté serveur : Route Handlers / API / données, de bout en bout | **Cypress** (`cy.request` — tests API) |
 
-> Outillage unique : **Cypress** — *Component Testing* (composants), *E2E* (navigateur) et tests **API** via `cy.request`.
+> Deux outils complémentaires : **Jest** (unitaire + intégration, transformé par `next/jest` —
+> SWC, résolution de l'alias `@/*`, deux projets *node* / *jsdom*) et **Cypress** (e2e navigateur +
+> système API via `cy.request`). Les fichiers se distinguent par leur **extension** :
+> `*.test.ts(x)` → Jest, `*.cy.ts(x)` → Cypress.
 
 Règle de découpage :
 
@@ -43,29 +46,35 @@ Règle de découpage :
 
 ```
 tests/
+  jest.setup.ts  # matchers @testing-library/jest-dom (chargé par les projets jsdom)
   unitaire/
-    frontend/    # composants, hooks, utils UI (Cypress Component Testing)
-    backend/     # schémas Zod, parsing IA, logique pure (Cypress)
+    frontend/    # composants, hooks, utils UI (Jest + Testing Library, jsdom) — *.test.tsx
+    backend/     # schémas Zod, parsing IA, logique pure (Jest, node) — *.test.ts
   integration/
-    frontend/    # composant + interactions formulaire (fixtures de données)
-    backend/     # Server Actions / Route Handlers + Prisma (BDD de test)
+    frontend/    # composant + interactions formulaire (Jest + Testing Library, fixtures) — *.test.tsx
+    backend/     # Server Actions / Route Handlers + Prisma (Jest, node, BDD de test) — *.test.ts
   e2e/
-    frontend/    # parcours navigateur de bout en bout (Cypress E2E) — front uniquement
+    frontend/    # parcours navigateur de bout en bout (Cypress E2E) — *.cy.ts, front uniquement
   systeme/
-    backend/     # scénarios système API / serveur / données — back uniquement
+    backend/     # scénarios système API / serveur / données (Cypress) — *.cy.ts, back uniquement
 ```
 
 ## Lancement
 
-> Scripts à câbler dans `package.json` une fois le projet Next.js initialisé.
+Via **Make** (interface unique — voir [`tooling.md`](./tooling.md)) ou npm :
 
 ```bash
-npm run test:unit          # tests unitaires (front + back)
-npm run test:integration   # tests d'intégration (front + back)
-npm run test:e2e           # tests e2e (front)
-npm run test:system        # tests système (back)
-npm test                   # tout
+make test-unit          # tests unitaires — front + back (Jest)
+make test-integration   # tests d'intégration — front + back (Jest)
+make test-e2e           # tests e2e — front (Cypress)
+make test-system        # tests système — back (Cypress)
+npm test                # = jest : unitaire + intégration en une seule passe
 ```
+
+> `make test-e2e` / `make test-system` lancent le serveur de prod (`npm run start`) via
+> `start-server-and-test` avant d'exécuter Cypress — un **`make build` préalable est requis**.
+> En itération locale rapide, `npm run test:e2e` exécute Cypress contre un serveur déjà
+> démarré (ex. `make dev`).
 
 ## Couverture
 

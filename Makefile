@@ -6,15 +6,20 @@
 IMAGE ?= cleverconnect
 PORT  ?= 3000
 
-.PHONY: help install dev build start lint typecheck \
+.PHONY: help install ci-install dev build start lint typecheck \
         test-unit test-integration test-e2e test-system \
-        prisma-generate db-migrate docker-build docker-run docker-up docker-down
+        storybook build-storybook \
+        prisma-generate db-migrate db-deploy db-status db-pull \
+        docker-build docker-run docker-up docker-down
 
 help: ## Affiche cette aide
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-18s\033[0m %s\n", $$1, $$2}'
 
-install: ## Installe les dépendances
+install: ## Installe les dépendances (local)
 	npm install
+
+ci-install: ## Installe les dépendances en mode reproductible (CI — lockfile)
+	npm ci
 
 dev: ## Serveur de développement (local, hors Docker)
 	npm run dev
@@ -31,23 +36,38 @@ lint: ## Lint (ESLint)
 typecheck: ## Vérification des types (tsc)
 	npm run typecheck
 
-test-unit: ## Tests unitaires (Cypress)
+test-unit: ## Tests unitaires — front + back (Jest)
 	npm run test:unit
 
-test-integration: ## Tests d'intégration (Cypress)
+test-integration: ## Tests d'intégration — front + back (Jest)
 	npm run test:integration
 
-test-e2e: ## Tests e2e — front (Cypress)
-	npm run test:e2e
+test-e2e: ## Tests e2e — front (Cypress) : build requis (make build), serveur lancé auto
+	npx start-server-and-test "npm run start" http://localhost:3000 "npm run test:e2e"
 
-test-system: ## Tests système — back (Cypress)
-	npm run test:system
+test-system: ## Tests système — back (Cypress) : build requis (make build), serveur lancé auto
+	npx start-server-and-test "npm run start" http://localhost:3000 "npm run test:system"
+
+storybook: ## Lance Storybook (visualisation des composants, port 6006)
+	npm run storybook
+
+build-storybook: ## Build statique de Storybook
+	npm run build-storybook
 
 prisma-generate: ## Génère le client Prisma
 	npm run prisma:generate
 
-db-migrate: ## Applique les migrations Prisma
+db-migrate: ## Crée + applique une migration en dev (prisma migrate dev)
 	npm run db:migrate
+
+db-deploy: ## Applique les migrations existantes (preprod/prod/CI — prisma migrate deploy)
+	npm run db:deploy
+
+db-status: ## État des migrations vs base (prisma migrate status)
+	npm run db:status
+
+db-pull: ## Récupère les variables d'env Vercel/Neon dans .env.local (vercel env pull)
+	npm run db:pull-env
 
 docker-build: ## Construit l'image Docker
 	docker build -t $(IMAGE) .

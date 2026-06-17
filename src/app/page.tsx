@@ -4,14 +4,22 @@ import Container from "@mui/material/Container";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import Button from "@mui/material/Button";
+import { ColorModeToggle } from "@/frontend/components/ColorModeToggle";
 
 export default function Home() {
   return (
     <Container maxWidth="md" sx={{ py: 8 }}>
       <Stack spacing={3}>
-        <Typography variant="h3" component="h1" sx={{ fontWeight: 700 }}>
-          CleverConnect
-        </Typography>
+        <Stack
+          direction="row"
+          sx={{ alignItems: "center", justifyContent: "space-between" }}
+        >
+          <Typography variant="h3" component="h1" sx={{ fontWeight: 700 }}>
+            CleverConnect
+          </Typography>
+          {/* Bascule clair / sombre — le mode suit la préférence système par défaut. */}
+          <ColorModeToggle />
+        </Stack>
         <Typography color="text.secondary">
           Mini-clone de Typeform — créez, diffusez et analysez vos questionnaires.
         </Typography>

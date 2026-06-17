@@ -1,0 +1,23 @@
+name: CI main — Tests système (back)
+
+# Check de mise en production (PR `dev` -> `main`) : tests système back (Cypress).
+# Commandes passées via Make : `make test-system` lance le serveur de prod (build
+# préalable) et l'orchestre via start-server-and-test (voir docs/tooling.md).
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  systeme:
+    name: Tests système (back)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: make ci-install
+      - run: make prisma-generate
+      - run: make build
+      - run: make test-system
