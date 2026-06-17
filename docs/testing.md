@@ -36,8 +36,17 @@ Règle de découpage :
   API / Prisma / BDD / IA pour l'intégration ; parcours utilisateur critique pour le
   système / e2e), il **n'est pas créé d'office** : il est **proposé** pour validation
   avant ajout.
-- **Pas de mocks.** On privilégie des **fixtures** (jeux de données de test) plutôt que
-  des mocks, pour des tests plus proches du réel et plus stables.
+- **Données réelles, pas de fausses données métier.** On ne **mocke jamais la logique
+  métier** : on passe des **fixtures** (jeux de données de test réalistes) et des props
+  réelles, pour des tests proches du réel et stables. Les `jest.fn()` utilisés comme
+  **callbacks** (`onChange`, `onClick`…) sont des *spies* d'observation, pas des mocks.
+- **Stub de frontière toléré, isolé et documenté.** En unitaire **front**, certains
+  composants/hooks consomment des **frontières** techniques (navigation `next/navigation`,
+  `fetch`, presse-papier `navigator.clipboard`). On les **stube** uniquement pour ne pas
+  toucher le réseau/le navigateur réel : c'est **isolé** au fichier de test, **commenté**,
+  et ne fabrique **aucune donnée métier fictive**. Tout ce qui nécessiterait de mocker une
+  couche de données (Prisma, services, Route Handlers) relève de l'**intégration / système**,
+  pas de l'unitaire.
 
 > Cette politique est rappelée automatiquement après chaque modification de code par un
 > hook local (`PostToolUse` dans `.claude/settings.local.json`).
@@ -71,7 +80,7 @@ make test-system        # tests système — back (Cypress)
 npm test                # = jest : unitaire + intégration en une seule passe
 ```
 
-> `make test-e2e` / `make test-system` lancent le serveur de prod (`npm run start`) via
+> `make test-e2e` / `make test-system` lancent le serveur (`npm run start`) via
 > `start-server-and-test` avant d'exécuter Cypress — un **`make build` préalable est requis**.
 > En itération locale rapide, `npm run test:e2e` exécute Cypress contre un serveur déjà
 > démarré (ex. `make dev`).
@@ -90,7 +99,10 @@ thème).
 Les tests vérifient un **comportement réel** plutôt que la couverture brute :
 valeur affichée, déclenchement de `onChange` / `onClick`, états `disabled`,
 `required` et `error`, dispatch par type, libellés et accessibilité (rôles et
-noms accessibles). Aucun mock : on passe des **props et fixtures réelles**.
+noms accessibles). On passe des **props et fixtures réelles** ; seules les
+**frontières** techniques (navigation, `fetch`, presse-papier) sont stubées —
+isolées et commentées dans le test (voir « Données réelles, pas de fausses
+données métier » plus haut).
 
 Périmètre couvert (regroupé par fichier de test) :
 
@@ -105,12 +117,59 @@ Périmètre couvert (regroupé par fichier de test) :
 | `form/QuestionTypeIcon.test.tsx` | `QuestionTypeIcon` (libellé accessible par type) |
 | `states/States.test.tsx` | `LoadingState`, `ErrorState`, `EmptyState`, `StatusSnackbar` |
 | `Layout.test.tsx` | `AppHeader`, `Logo`, `ColorModeToggle`, `PageContainer` |
+| `builder/QuestionEditorItem.test.tsx` | `QuestionEditorItem` (libellé, type, switch obligatoire, suppression, options selon le type, correction IA) |
+| `admin/AdminFormCard.test.tsx` | `AdminFormCard` (titre/description, menu d'actions, navigation vers l'éditeur) — *stub `next/navigation`* |
+| `admin/NewFormButton.test.tsx` | `NewFormButton` (libellé, ouverture de la boîte de création) — *stub `next/navigation`* |
+| `admin/GenerateWithAiButton.test.tsx` | `GenerateWithAiButton` (libellé, ouverture de la boîte de génération IA) — *stub `next/navigation`* |
+| `auth/LoginForm.test.tsx` | `LoginForm` (mot de passe requis, erreur serveur, redirection, anti open-redirect, erreur réseau) — *stub `next/navigation` + `fetch`* |
 
-### Logique partagée (unitaire, backend)
+### Hooks frontend (unitaire)
+
+| Fichier de test | Objet |
+|-----------------|-------|
+| `builder/useFormBuilder.test.tsx` | État local du Builder (ajout/suppression/réordre, payload d'update) |
+| `responder/useResponderForm.test.ts` | Mapping valeurs ⇄ `AnswerInput`, valeurs par défaut par type |
+| `hooks/useCopyToClipboard.test.ts` | Copie via `navigator.clipboard`, repli `execCommand`, échec — *stub frontière presse-papier* |
+| `hooks/useAiAssist.test.ts` | Génération / correction IA, états `pending` / `error`, reset — *stub frontière `fetch`* |
+
+### Logique partagée et backend (unitaire)
 
 | Fichier de test | Objet |
 |-----------------|-------|
 | `backend/form-schema.test.ts` | Validation Zod de la sortie IA (`generatedFormSchema`) |
+| `backend/form-errors.test.ts` | Erreurs métier de la couche Form (`FormNotFoundError`, `InvalidStatusTransitionError`) |
+| `backend/*-schema.test.ts` | Schémas Zod d'entrée (login, création / mise à jour de form, question, option, réponse, réordre, IA) |
+| `backend/*-mapper.test.ts` | Mappers Prisma → domaine (`formMapper`, `responseMapper`, `aiMapper`) |
+| `backend/admin-session.test.ts`, `rate-limit.test.ts` | Session admin (cookie signé) et limitation de débit |
+| `frontend/lib/publicFormUrl.ssr.test.ts` | Branche **SSR** de `buildPublicFormUrl` (env. `node`, `window` réellement indisponible) |
 
 > Objectif de couverture : pas de seuil chiffré imposé pour l'instant ; la règle
-> est qu'**aucun composant ou logique pure ne reste sans test unitaire**.
+> est qu'**aucun composant ou logique pure ne reste sans test unitaire**. Les
+> couches de **données** (services, repositories, Route Handlers, client IA)
+> relèvent de l'**intégration / système** et ne sont pas comptées dans la
+> couverture unitaire ci-dessous.
+
+### Rapport de couverture (unitaire)
+
+> **Rapport du 2026-06-17** — généré via
+> `npx jest tests/unitaire --coverage` (hors fichiers Storybook `*.stories.tsx`).
+> **405 tests** répartis sur **47 suites**, tous au vert.
+
+| Métrique | Couverture | Détail |
+|----------|-----------|--------|
+| **Statements** | **62,66 %** | 1128 / 1800 |
+| **Branches** | **64,02 %** | 429 / 670 |
+| **Functions** | **66,66 %** | 264 / 396 |
+| **Lines** | **62,83 %** | 1077 / 1714 |
+
+Le total est mesuré sur **tout** `src/`. Il inclut donc des fichiers à 0 %
+**par conception** (Route Handlers `src/app/api/**`, services, repositories,
+client IA, `db.ts`) qui sont des cibles **intégration / système** et non
+unitaires — ce qui tire mécaniquement le pourcentage global vers le bas. Sur le
+périmètre réellement visé par l'unitaire, la couverture est élevée : `src/shared/schemas`
+≈ 94 %, composants `fields` / `form` / `viewer` / `responder` ≈ 97-100 %, hooks
+`useFormBuilder` / `useResponderForm` ≈ 96-98 %.
+
+> Le rapport HTML détaillé (`lcov`) **n'est pas versionné** (volumineux,
+> regénérable) : ajouter `--coverageReporters=html` à la commande ci-dessus le
+> produit dans `coverage/` (dossier ignoré par Git).
