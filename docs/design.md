@@ -37,12 +37,17 @@ Le remplissage proprement dit est délégué au Client Component `ResponderForm`
 
 - **React Hook Form + Zod** : un `AnswerInput` par question, validé côté client par le **même** schéma que le backend (`buildSubmitResponseSchema(form.questions)`) — règles par type (requis, e-mail, nombre, date, cardinalité des choix). Les erreurs s'affichent **inline** sous chaque question.
 - Chaque question est rendue par le dispatcher `QuestionField`. Le hook `useResponderForm` concentre la conversion **valeur d'affichage ⇄ `AnswerInput`** : les champs de choix manipulent des **libellés** d'options, reconvertis en **identifiants** (`selectedOptionIds`) pour le backend.
+- **Confidentialité (RGPD)** : avant le bouton d'envoi, une **mention de confidentialité** (`PrivacyNotice`) et une **case de consentement obligatoire** (base légale). Tant que la case n'est pas cochée, l'envoi est bloqué (verrou avant la validation des champs). Détails : [`security.md`](./security.md).
 - **Soumission** : `POST /api/public/forms/[publicId]/responses`. Succès → `ThankYouScreen` (écran de remerciement, le formulaire n'est pas rouvert — surface write-only). Échec → message d'erreur (les `issues` de validation serveur sont agrégées et affichées). Pendant l'envoi : barre de progression + bouton en état chargé, champs désactivés.
 - En-tête : titre et description du questionnaire ; mise en page cohérente (`AppHeader`, `PageContainer`, carte MUI), **theme-aware** (clair / sombre).
 
 ### Fond pointillé décoratif (`DottedBackground`)
 
 `src/frontend/components/DottedBackground.tsx` rend un **motif de points verts subtil** via un `radial-gradient` répété (`backgroundImage` + `backgroundSize`), sans image ni dépendance externe. La couleur des points dérive du **`secondary` du thème** (vert lime) appliqué à **faible opacité** — légèrement renforcée en mode sombre pour rester lisible : le motif est donc **theme-aware**. Un léger fondu vers les bords (`maskImage`) adoucit le rendu. La couche est purement décorative : `aria-hidden`, `pointerEvents: "none"`, positionnée **derrière** le contenu (`position: absolute`). Elle s'utilise soit en overlay (sans enfant), soit comme conteneur (le contenu est alors empilé au-dessus).
+
+**Halo interactif (« spotlight »).** Par défaut (`interactive`, vrai), une **seconde couche** de points plus opaques (≈ 0,45 en clair, ≈ 0,50 en sombre) se révèle dans un disque qui **suit le curseur** : les points autour de la souris s'« éclairent ». L'effet est obtenu sans librairie via un `mask-image` en `radial-gradient` centré sur deux **variables CSS** (`--mx`/`--my`) mises à jour au `mousemove` et **throttlées par `requestAnimationFrame`** — donc **sans re-render React** (écriture directe sur le DOM). L'écoute se fait sur `window` ; la couche reste `aria-hidden` et `pointerEvents: "none"`. Le halo s'estompe en douceur quand le curseur quitte la fenêtre.
+
+**Accessibilité.** Le halo n'est **pas monté** si l'utilisateur a activé `prefers-reduced-motion` (via le hook `useReducedMotion`, voir [`accessibility.md`](./accessibility.md)) ou si `interactive={false}` : on retombe alors sur le **motif statique** d'origine, sans écouteur ni animation.
 
 ### Icônes animées (lordicon auto-hébergé)
 
@@ -61,7 +66,7 @@ Le lecteur proprement dit est isolé dans `LordIconPlayer.tsx` (chargé dynamiqu
 
 ### Coquille admin (`src/app/admin/layout.tsx`)
 
-Toutes les pages sous `/admin` partagent une même **coquille** (Server Component) : un `AppHeader` portant la **marque cliquable** (retour au tableau de bord), un **bouton « Déconnexion »** (`LogoutButton`, Client Component : `POST /api/auth/logout` puis redirection vers `/login`) et la **bascule de thème**, le tout au-dessus du contenu de page dans un `PageContainer`. Ce layout est le **seul** porteur de l'en-tête admin : les pages enfants ne le ré-ajoutent pas. L'accès est protégé en amont par le `middleware` (voir [`security.md`](./security.md)).
+Toutes les pages sous `/admin` partagent une même **coquille** (Server Component) : un `AppHeader` portant la **marque cliquable** (retour au tableau de bord), un **bouton « Déconnexion »** (`LogoutButton`, Client Component : `POST /api/auth/logout` puis redirection vers l'**accueil public** `/`) et la **bascule de thème**, le tout au-dessus du contenu de page dans un `PageContainer`. Ce layout est le **seul** porteur de l'en-tête admin : les pages enfants ne le ré-ajoutent pas. L'accès est protégé en amont par le `middleware` (voir [`security.md`](./security.md)).
 
 ### Tableau de bord — liste des questionnaires (`src/app/admin/page.tsx`)
 
@@ -70,7 +75,7 @@ Page d'accueil de l'admin (Server Component). Elle lit les questionnaires **dire
 Les interactions sont déléguées à des **composants clients** dédiés (`src/frontend/components/admin/`) :
 
 - **`NewFormButton` + `CreateFormDialog`** : bouton « Nouveau questionnaire » ouvrant une boîte de dialogue (titre + description). À la validation, `POST /api/admin/forms` (le questionnaire est amorcé avec une première question, requise par le schéma de création) puis redirection vers l'éditeur. Le titre est requis (validation inline) ; états de chargement et d'erreur gérés.
-- **`AdminFormCard` + `FormCardActions`** : menu d'actions superposé à chaque carte — **publier** (brouillon → publié) ou **clôturer** (publié → clôturé) selon le statut, **copier le lien** public (uniquement pour un questionnaire **publié**), **voir les réponses** (vers `/admin/forms/[id]/responses`, pour un questionnaire publié ou clôturé) et **supprimer** (avec **confirmation** explicite rappelant le titre). Après chaque mutation réussie, la liste est rafraîchie (`router.refresh()`) et un **toast** (`StatusSnackbar`) confirme l'action ; les erreurs sont signalées de la même façon.
+- **`AdminFormCard` + `FormCardActions`** : menu d'actions superposé à chaque carte — **publier** (brouillon → publié) ou **clôturer** (publié → clôturé) selon le statut, **copier le lien** public (uniquement pour un questionnaire **publié**), **voir les réponses** (vers `/admin/forms/[id]/responses`, pour un questionnaire publié ou clôturé) et **supprimer** (avec **confirmation** explicite rappelant le titre). À la **publication**, le lien public est **copié automatiquement** dans le presse-papier (l'action « Copier le lien » reste disponible). La carte réserve un espace en haut à droite (`reserveActionSlot` de `FormCard`) pour que le menu ⋮ superposé ne chevauche pas le badge de statut. Après chaque mutation réussie, la liste est rafraîchie (`router.refresh()`) et un **toast** (`StatusSnackbar`) confirme l'action ; les erreurs sont signalées de la même façon.
 - **Hook `useFormMutations`** (`src/frontend/hooks/`) : encapsule les appels `fetch` (création, changement de statut, suppression) et expose un état transverse `pending` / `error`, pour garder les composants de présentation simples.
 
 ### Response Viewer (visualisation des réponses)
@@ -95,13 +100,16 @@ La carte réutilise les composants existants (`QuestionTypeIcon`, `PageContainer
   l'hydratation** pour éviter tout flash (FOUC).
 - L'utilisateur peut basculer **clair / sombre / système** via le composant `ColorModeToggle` ; le
   choix est mémorisé. Le mode clair/sombre s'applique à **tout** le système (admin **et** public).
+- **Logo** (`Logo`) : le carré du pictogramme reprend le vert du thème (éclairci en sombre) mais la
+  **coche reste blanche** dans les deux modes — la marque se lit ainsi toujours « blanc + vert », y
+  compris en thème sombre (où la couleur de contraste calculée basculerait sinon au noir).
 
 ## Form Builder (éditeur de questionnaire)
 
 Le Form Builder (`/admin/forms/[id]/edit`) est l'interface d'administration de conception d'un questionnaire. Il s'organise en couches claires :
 
 - **Page** (`src/app/admin/forms/[id]/edit/page.tsx`) : Server Component fin qui charge le questionnaire (`getForm`) par sa **clé interne** (jamais l'identifiant public) et délègue l'édition au Client Component `FormBuilder`. Un questionnaire introuvable produit un `notFound()` (404). En Next.js 16, `params` est asynchrone (`Promise`).
-- **`FormBuilder`** (`src/frontend/components/builder/FormBuilder.tsx`) : orchestration. Édition du **titre** et de la **description**, **palette** des types, liste de questions réordonnable, et actions **Enregistrer** (PATCH `/api/admin/forms/[id]`) et **Publier** (PATCH `/api/admin/forms/[id]/publish`). Une fois le questionnaire **publié**, un bouton **Copier le lien** apparaît : il copie l'URL publique absolue (`window.location.origin` + `/f/<publicId>`) dans le presse-papier et confirme par un **toast**. Pour un questionnaire publié ou clôturé, un bouton **Voir les réponses** (vers `/admin/forms/[id]/responses`) complète aussi l'en-tête. Les états de chargement/erreur sont matérialisés par les boutons en `loading` et un `StatusSnackbar` (succès / erreur).
+- **`FormBuilder`** (`src/frontend/components/builder/FormBuilder.tsx`) : orchestration. Le titre (avec le badge de statut) et la **barre d'actions** sont disposés sur **deux lignes** (actions sous le titre, qui s'enroulent si l'espace manque). Édition du **titre** et de la **description**, **palette** des types, liste de questions réordonnable, et actions **Enregistrer** (PATCH `/api/admin/forms/[id]`) et **Publier** (PATCH `/api/admin/forms/[id]/publish`). À la **publication**, le lien public est **copié automatiquement** dans le presse-papier et le toast le confirme. Une fois le questionnaire **publié**, un bouton **Copier le lien** reste disponible : il copie l'URL publique absolue (`window.location.origin` + `/f/<publicId>`) dans le presse-papier et confirme par un **toast**. Pour un questionnaire publié ou clôturé, un bouton **Voir les réponses** (vers `/admin/forms/[id]/responses`) complète aussi l'en-tête. Les états de chargement/erreur sont matérialisés par les boutons en `loading` et un `StatusSnackbar` (succès / erreur).
 - **`QuestionTypePalette`** : les **8 types** (dérivés de `questionTypeMeta`) ; un clic ajoute une question vide de ce type en fin de liste.
 - **`QuestionEditorItem`** : carte d'édition d'une question (libellé, type, switch « obligatoire », suppression) avec **poignée de glisser-déposer**. L'**éditeur d'options** n'apparaît que pour les types à choix (`isChoiceQuestionType` → `SINGLE_CHOICE` / `MULTIPLE_CHOICE`).
 - **`OptionsEditor`** : ajout / suppression / saisie / réordonnancement des options d'une question à choix (au moins une option conservée).
@@ -117,7 +125,7 @@ Le Form Builder (`/admin/forms/[id]/edit`) est l'interface d'administration de c
 | **Chargement** | squelettes / spinners (ex. pendant la génération IA) |
 | **Erreur** | message clair + action de reprise ; erreurs de validation inline |
 | **Vide** | message d'amorçage (ex. « Aucune réponse pour le moment ») |
-| **Succès** | toast de confirmation (création, soumission) |
+| **Succès** | toast de confirmation (création, soumission) — affiché **en haut, centré** (`StatusSnackbar`) |
 
 ## Maquettes / wireframes
 

@@ -17,6 +17,12 @@ export interface FormCardProps {
   /** Date de dernière modification (Date ou ISO string). */
   updatedAt: Date | string;
   onClick?: () => void;
+  /**
+   * Réserve un espace à droite de l'en-tête pour un bouton d'action superposé
+   * (ex. le menu ⋮ d'`AdminFormCard`), afin qu'il ne chevauche pas le badge de
+   * statut. Sans effet sur l'usage public de la carte.
+   */
+  reserveActionSlot?: boolean;
 }
 
 // Carte d'un questionnaire dans la liste du Builder : titre, description, statut,
@@ -28,6 +34,7 @@ export function FormCard({
   questionCount,
   updatedAt,
   onClick,
+  reserveActionSlot = false,
 }: FormCardProps) {
   const date = typeof updatedAt === "string" ? new Date(updatedAt) : updatedAt;
   const dateLabel = date.toLocaleDateString("fr-FR", {
@@ -42,7 +49,13 @@ export function FormCard({
         <Stack
           direction="row"
           spacing={1}
-          sx={{ alignItems: "flex-start", justifyContent: "space-between" }}
+          sx={{
+            alignItems: "flex-start",
+            justifyContent: "space-between",
+            // Laisse la place au bouton d'action superposé (menu ⋮) pour que le
+            // badge de statut ne passe pas dessous.
+            pr: reserveActionSlot ? 4.5 : 0,
+          }}
         >
           <Typography variant="h6" sx={{ fontWeight: 700 }}>
             {title}

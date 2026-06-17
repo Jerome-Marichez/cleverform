@@ -10,9 +10,14 @@ import Typography from "@mui/material/Typography";
 import Button from "@mui/material/Button";
 import Alert from "@mui/material/Alert";
 import LinearProgress from "@mui/material/LinearProgress";
+import Checkbox from "@mui/material/Checkbox";
+import FormControlLabel from "@mui/material/FormControlLabel";
+import FormControl from "@mui/material/FormControl";
+import FormHelperText from "@mui/material/FormHelperText";
 import { AppHeader } from "@/frontend/components/AppHeader";
 import { PageContainer } from "@/frontend/components/PageContainer";
 import { QuestionField } from "@/frontend/components/fields/QuestionField";
+import { PrivacyNotice } from "@/frontend/components/responder/PrivacyNotice";
 import { ThankYouScreen } from "@/frontend/components/responder/ThankYouScreen";
 import { useResponderForm, optionLabels } from "@/frontend/hooks/useResponderForm";
 import type { AnswerInput, PublicForm, SubmitResponseInput } from "@/shared/schemas";
@@ -39,6 +44,9 @@ export function ResponderForm({ form }: ResponderFormProps) {
 
   const [submitted, setSubmitted] = React.useState(false);
   const [serverError, setServerError] = React.useState<string | null>(null);
+  // Consentement RGPD : prérequis bloquant à la soumission (base légale).
+  const [consent, setConsent] = React.useState(false);
+  const [consentError, setConsentError] = React.useState(false);
 
   const onSubmit = handleSubmit(async (values: SubmitResponseInput) => {
     setServerError(null);
@@ -69,6 +77,17 @@ export function ResponderForm({ form }: ResponderFormProps) {
       setServerError("Une erreur réseau est survenue. Réessayez.");
     }
   });
+
+  // Bloque l'envoi tant que le consentement RGPD n'est pas donné, puis délègue
+  // à la validation React Hook Form / Zod.
+  const handleFormSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    if (!consent) {
+      event.preventDefault();
+      setConsentError(true);
+      return;
+    }
+    void onSubmit(event);
+  };
 
   return (
     <Box
@@ -102,7 +121,7 @@ export function ResponderForm({ form }: ResponderFormProps) {
                 <CardContent sx={{ p: { xs: 2.5, sm: 4 } }}>
                   <Stack
                     component="form"
-                    onSubmit={onSubmit}
+                    onSubmit={handleFormSubmit}
                     noValidate
                     spacing={4}
                   >
@@ -143,6 +162,32 @@ export function ResponderForm({ form }: ResponderFormProps) {
                     })}
 
                     {isSubmitting ? <LinearProgress aria-label="Envoi en cours" /> : null}
+
+                    {/* Information RGPD + recueil du consentement (base légale). */}
+                    <Stack spacing={1.5}>
+                      <PrivacyNotice />
+                      <FormControl error={consentError} required>
+                        <FormControlLabel
+                          control={
+                            <Checkbox
+                              checked={consent}
+                              onChange={(event) => {
+                                setConsent(event.target.checked);
+                                if (event.target.checked) setConsentError(false);
+                              }}
+                              disabled={isSubmitting}
+                            />
+                          }
+                          label="J'ai lu la mention de confidentialité et je consens au traitement de mes réponses."
+                        />
+                        {consentError ? (
+                          <FormHelperText>
+                            Vous devez accepter le traitement de vos réponses pour
+                            les envoyer.
+                          </FormHelperText>
+                        ) : null}
+                      </FormControl>
+                    </Stack>
 
                     <Button
                       type="submit"

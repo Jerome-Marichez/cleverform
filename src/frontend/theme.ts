@@ -35,6 +35,17 @@ export const theme = createTheme({
     h3: { fontWeight: 700 },
   },
   components: {
+    // Accessibilité : anneau de focus visible et cohérent pour la navigation au
+    // clavier. `:focus-visible` ne se déclenche qu'au clavier (pas à la souris),
+    // et la couleur dérive de la primaire du thème (theme-aware clair/sombre).
+    MuiCssBaseline: {
+      styleOverrides: (theme) => ({
+        ":focus-visible": {
+          outline: `2px solid ${theme.vars?.palette.primary.main ?? theme.palette.primary.main}`,
+          outlineOffset: "2px",
+        },
+      }),
+    },
     MuiButton: { defaultProps: { disableElevation: true } },
     MuiCard: { defaultProps: { variant: "outlined" } },
   },

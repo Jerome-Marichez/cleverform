@@ -75,7 +75,16 @@ export function FormCardActions({
     closeMenu();
     try {
       await changeStatus(id, "PUBLISHED");
-      setToast({ message: "Questionnaire publié.", severity: "success" });
+      // Confort : on copie d'emblée le lien public partageable. La copie peut
+      // échouer hors d'un geste utilisateur direct ; on reflète le résultat dans
+      // le message, et l'action « Copier le lien » reste disponible.
+      const copied = await copy(buildPublicFormUrl(publicId));
+      setToast({
+        message: copied
+          ? "Questionnaire publié. Lien copié dans le presse-papier."
+          : "Questionnaire publié. Utilisez « Copier le lien » pour le partager.",
+        severity: "success",
+      });
       router.refresh();
     } catch (error) {
       setToast({

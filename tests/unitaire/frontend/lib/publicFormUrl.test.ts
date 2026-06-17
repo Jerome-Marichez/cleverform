@@ -20,4 +20,8 @@ describe("publicFormUrl (unitaire)", () => {
       "http://localhost/f/pub-token",
     );
   });
+
+  // La branche SSR (`window` indisponible) est couverte dans un fichier dédié en
+  // environnement `node` (voir `publicFormUrl.ssr.test.ts`) : `window` est
+  // non-configurable sous jsdom et ne peut pas y être retiré proprement.
 });

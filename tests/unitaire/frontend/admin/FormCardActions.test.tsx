@@ -118,6 +118,32 @@ describe("FormCardActions (unitaire)", () => {
     );
   });
 
+  it("copie automatiquement le lien public lors de la publication", async () => {
+    const writeText = jest.fn().mockResolvedValue(undefined);
+    Object.assign(navigator, { clipboard: { writeText } });
+    (global.fetch as jest.Mock).mockResolvedValue({ ok: true });
+
+    renderWithTheme(
+      <FormCardActions id="f1" publicId="pub1" title="Test" status="DRAFT" />,
+    );
+    openMenu();
+    fireEvent.click(screen.getByRole("menuitem", { name: /Publier/ }));
+
+    // La publication passe par la route ADMIN, puis copie le lien public.
+    await waitFor(() =>
+      expect(global.fetch).toHaveBeenCalledWith(
+        "/api/admin/forms/f1/publish",
+        expect.objectContaining({ method: "PATCH" }),
+      ),
+    );
+    await waitFor(() =>
+      expect(writeText).toHaveBeenCalledWith("http://localhost/f/pub1"),
+    );
+    expect(
+      await screen.findByText(/Lien copié dans le presse-papier/),
+    ).toBeInTheDocument();
+  });
+
   it("ne propose ni publier ni clôturer pour un questionnaire clôturé (CLOSED)", () => {
     renderWithTheme(
       <FormCardActions id="f1" publicId="pub1" title="Test" status="CLOSED" />,

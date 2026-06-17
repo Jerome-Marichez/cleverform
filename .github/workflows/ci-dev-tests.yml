@@ -10,6 +10,32 @@ jobs:
   tests:
     name: Tests unitaires & intégration
     runs-on: ubuntu-latest
+    # Secrets injectés depuis GitHub Actions (jamais codés en dur). Absents = chaînes
+    # vides : sans impact pour l'unitaire (fixtures, Prisma initialisé paresseusement).
+    # L'intégration, elle, utilise une BDD de test DÉDIÉE (service Postgres ci-dessous,
+    # `TEST_DATABASE_URL`) — jamais la base Neon de production.
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      DIRECT_URL: ${{ secrets.DATABASE_URL_UNPOOLED }}
+      ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
+      SESSION_SECRET: ${{ secrets.SESSION_SECRET }}
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      # BDD de test éphémère (service Postgres) — surcharge DATABASE_URL côté intégration.
+      TEST_DATABASE_URL: postgresql://test:test@localhost:5432/cleverform_test
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: cleverform_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U test -d cleverform_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -19,4 +45,7 @@ jobs:
       - run: make ci-install
       - run: make prisma-generate
       - run: make test-unit
+      # Applique le schéma sur la BDD de test, puis lance l'intégration sur cette base.
+      - name: Prépare la BDD de test
+        run: make test-db-prepare TEST_DB_URL="$TEST_DATABASE_URL"
       - run: make test-integration

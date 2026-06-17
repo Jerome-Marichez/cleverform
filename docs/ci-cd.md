@@ -28,6 +28,12 @@ en local et en CI** (voir [`tooling.md`](./tooling.md)). `make ci-install` fait 
 - ✅ **Lint** (ESLint) + **typecheck** (`tsc --noEmit`)
 - ✅ Tests **unitaires** + **intégration** (Jest)
 
+> Le workflow `ci-dev-tests.yml` provisionne un **service Postgres éphémère**
+> (`postgres:16-alpine`) pour l'**intégration** : `TEST_DATABASE_URL` pointe sur ce
+> service, `make test-db-prepare` y applique le schéma (`prisma migrate deploy`),
+> puis `make test-integration` s'exécute. Cette base de **test dédiée** n'est
+> **jamais** la base Neon de production (garde-fou anti-prod dans le setup Jest).
+
 ### PR → `main` (long, mise en production)
 
 - ✅ **Build local** (`next build`)
@@ -37,6 +43,12 @@ en local et en CI** (voir [`tooling.md`](./tooling.md)). `make ci-install` fait 
 
 > Les étapes Docker / e2e / système sont coûteuses : les cantonner aux PR vers `main` garde
 > les itérations sur `dev` rapides.
+
+> Les workflows `ci-main-e2e.yml` / `ci-main-system.yml` provisionnent eux aussi un
+> **service Postgres** : le serveur (`make build` + `npm run start`) tourne contre la
+> **BDD de test** (`DATABASE_URL` du service, schéma via `make test-db-prepare`), avec
+> un `ADMIN_PASSWORD` / `SESSION_SECRET` de test déterministes — **jamais** la base
+> Neon de production. Cypress s'authentifie via `CYPRESS_ADMIN_PASSWORD`.
 
 ## Déploiement (CD) — Vercel
 
@@ -63,6 +75,20 @@ Development) — voir la répartition par branche dans [`architecture.md`](./arc
 
 Les **migrations** sont appliquées avec `make db-deploy` (`prisma migrate deploy`) — sur la base
 de l'environnement ciblé — après mise à jour des variables.
+
+### Secrets en CI (GitHub Actions)
+
+Aucune valeur sensible n'est **codée en dur** dans les workflows. Les variables sont injectées
+depuis les **GitHub Actions Secrets** via `${{ secrets.* }}` (bloc `env:` au niveau du job) :
+`DATABASE_URL`, `DATABASE_URL_UNPOOLED` (→ `DIRECT_URL`), `ADMIN_PASSWORD`, `SESSION_SECRET`,
+`ANTHROPIC_API_KEY`. Un secret **non défini** vaut une chaîne vide : sans impact sur la CI actuelle
+(tests sur **fixtures**, build sans base grâce à l'initialisation **paresseuse** de Prisma). Le
+smoke test **Docker** conserve un **repli** sur une URL factice si le secret est absent.
+
+Définition des secrets (par l'administrateur) : *Settings → Secrets and variables → Actions*, ou en
+CLI `gh secret set <NOM>`. Le fichier versionné **`.env.example`** ne contient **que des noms de
+variables, valeurs vides** — jamais de secret. Les valeurs réelles vivent dans `.env` / `.env.local`
+(gitignorés) en local, dans **Vercel** au runtime, et dans les **GitHub Secrets** pour la CI.
 
 ### Déploiements Preview & branches Neon
 

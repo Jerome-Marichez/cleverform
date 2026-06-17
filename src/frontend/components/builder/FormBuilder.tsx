@@ -195,7 +195,16 @@ export function FormBuilder({
       }
 
       setCurrentStatus("PUBLISHED");
-      setToast({ message: "Questionnaire publié.", severity: "success" });
+      // Confort : on copie d'emblée le lien public partageable. Le résultat de la
+      // copie (parfois bloquée hors d'un geste utilisateur direct) est reflété
+      // dans le message ; le bouton « Copier le lien » reste disponible.
+      const copied = await copy(buildPublicFormUrl(publicId));
+      setToast({
+        message: copied
+          ? "Questionnaire publié. Lien copié dans le presse-papier."
+          : "Questionnaire publié. Utilisez « Copier le lien » pour le partager.",
+        severity: "success",
+      });
       router.refresh();
     } catch {
       setToast({
@@ -227,18 +236,19 @@ export function FormBuilder({
   return (
     <PageContainer>
       <Stack spacing={3}>
-        <Stack
-          direction={{ xs: "column", sm: "row" }}
-          spacing={2}
-          sx={{ alignItems: { sm: "center" }, justifyContent: "space-between" }}
-        >
+        <Stack direction="column" spacing={2} sx={{ alignItems: "stretch" }}>
           <Stack direction="row" spacing={1.5} sx={{ alignItems: "center" }}>
             <Typography variant="h4" component="h1" sx={{ fontWeight: 700 }}>
               Éditeur de questionnaire
             </Typography>
             <FormStatusChip status={currentStatus} />
           </Stack>
-          <Stack direction="row" spacing={1.5}>
+          <Stack
+            direction="row"
+            spacing={1.5}
+            useFlexGap
+            sx={{ flexWrap: "wrap" }}
+          >
             {hasResponses ? (
               <Button
                 variant="text"
