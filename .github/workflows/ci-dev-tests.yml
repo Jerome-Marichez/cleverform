@@ -1,0 +1,17 @@
+name: CI dev — Tests unitaires & intégration
+
+# Check rapide à chaque PR vers `dev` : tests unitaires + intégration (Cypress).
+on:
+  pull_request:
+    branches: [dev]
+
+jobs:
+  tests:
+    name: Tests unitaires & intégration
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: cypress-io/github-action@v6
+        with:
+          install-command: npm ci
+          command: npm run prisma:generate && npm run test:unit && npm run test:integration
