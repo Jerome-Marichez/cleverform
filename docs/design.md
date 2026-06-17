@@ -46,6 +46,18 @@ Le wrapper `src/frontend/components/LordIcon.tsx` :
 
 Le lecteur proprement dit est isolé dans `LordIconPlayer.tsx` (chargé dynamiquement) pour cantonner l'import navigateur-only.
 
+## Response Viewer (visualisation des réponses)
+
+La page admin `src/app/admin/forms/[id]/responses/page.tsx` (Server Component, sous la garde admin du middleware) visualise les réponses **agrégées** d'un questionnaire. Elle charge l'agrégat directement côté serveur (`getFormResponsesAggregated(id)` — aucune route appelée depuis le client), renvoie un **404** (`notFound()`) si le questionnaire n'existe pas, et affiche l'**état vide** « Aucune réponse pour le moment » tant qu'aucune soumission n'a été collectée. L'en-tête rappelle le titre, le **nombre total de réponses** et propose un accès à l'édition du questionnaire.
+
+La visualisation par question est assurée par `QuestionAggregateCard` (`src/frontend/components/viewer/`), qui s'adapte à la **famille** de la question (champ `kind` de l'agrégat) :
+
+- **Choix** (`SINGLE_CHOICE` / `MULTIPLE_CHOICE`) → une **barre horizontale** par option (`LinearProgress`), proportionnelle à l'option la plus choisie, avec le libellé, le décompte et le **pourcentage** (rapporté au nombre de réponses).
+- **Note** (`RATING`) → la **moyenne** en étoiles `Rating` (lecture seule) doublée d'un texte « x.x / 5 » ; repli explicite si aucune note.
+- **Valeur** (texte, nombre, e-mail, date) → un **échantillon** des valeurs saisies, tronqué au-delà d'un seuil (« + N autres ») ; repli « — » si vide.
+
+La carte réutilise les composants existants (`QuestionTypeIcon`, `PageContainer`, `EmptyState`) et ne dépend d'**aucune** bibliothèque de graphiques : tout est construit avec des primitives MUI (barres, étoiles), responsive et **theme-aware**.
+
 ## Thème clair / sombre
 
 - **Couleur dominante : le vert** de la marque, décliné en clair **et** en sombre.
