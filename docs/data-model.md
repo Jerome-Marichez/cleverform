@@ -123,6 +123,69 @@ model Answer {
 - Le `status` pilote la **visibilité publique** : `DRAFT` (en cours / brouillon IA) et `CLOSED`
   renvoient un 404 public ; seul `PUBLISHED` est servi sur `/f/[publicId]`.
 
+## Schémas d'entrée & validation (Zod)
+
+Le domaine partagé (`src/shared/schemas/`, framework-agnostique) regroupe les **schémas Zod**
+et **types inférés** qui valident chaque entrée et décrivent les sorties publiques. Trois familles
+distinctes, à ne pas confondre :
+
+| Famille | Fichier | Sens | Usage |
+|---------|---------|------|-------|
+| **Sortie IA** | `form.ts` | sortie | valide ce que l'IA **produit** avant insertion (`generatedFormSchema`) |
+| **Entrée Builder** | `formInput.ts` | entrée | valide ce que l'admin **envoie** (création / mise à jour / réordonnancement) |
+| **Soumission publique** | `response.ts` | entrée | valide ce que le public **soumet** (réponses) |
+| **DTO publics** | `publicForm.ts` | sortie | types exposés au Responder (**sans `id` interne**) |
+| **Auth admin** | `auth.ts` | entrée | mot de passe de connexion |
+
+Tout est réexporté depuis `src/shared/schemas/index.ts` (`import { … } from "@/shared/schemas"`).
+Messages d'erreur **en français**. Schémas en **camelCase**, types/DTO en **PascalCase**.
+
+### Schémas d'entrée du Builder (`formInput.ts`)
+
+- `optionInputSchema` — `{ label (non vide), order (entier ≥ 0) }`.
+- `questionInputSchema` — `{ label (non vide), type, required, order, options[] }`.
+  Une règle **`superRefine`** lie les options au type : les options sont **requises et non vides
+  uniquement** pour `SINGLE_CHOICE` / `MULTIPLE_CHOICE`, et **interdites** pour les autres types.
+- `createFormSchema` — `{ title (non vide), description?, questions[] (≥ 1) }`.
+- `updateFormSchema` — mise à jour **partielle** (PATCH) : `title?`, `description?`, `status?`
+  (`DRAFT`/`PUBLISHED`/`CLOSED`), `questions?` ; **au moins un champ** doit être fourni.
+- `reorderSchema` — `{ orderedIds[] }` : liste ordonnée d'identifiants **uniques** et non vides
+  (l'ordre du tableau définit la nouvelle position).
+
+### Soumission publique & règles par type (`response.ts`)
+
+`submitResponseSchema` valide d'abord la **forme** brute d'une soumission :
+`{ answers: [{ questionId, value? , selectedOptionIds? }] }` (au moins une réponse). Une réponse
+porte au plus l'un des deux supports : `value` (scalaire) **ou** `selectedOptionIds` (choix),
+en miroir de `Answer.value` / `Answer.selectedOptions`.
+
+Les **règles métier par type** ne sont applicables qu'avec la définition du questionnaire (type +
+`required`), que seul le backend détient. Elles sont portées par la fonction **pure**
+`validateAnswerForType(type, answer, required)` (retourne `{ valid: true }` ou
+`{ valid: false; error }`) et par le schéma paramétré `buildSubmitResponseSchema(questions)`
+(forme + règles + présence des questions obligatoires + rejet des `questionId` inconnus) :
+
+| Type | Règle (réponse non vide) |
+|------|--------------------------|
+| `SHORT_TEXT`, `LONG_TEXT` | texte non vide |
+| `EMAIL` | format e-mail (`x@y.z`) |
+| `NUMBER` | nombre fini |
+| `RATING` | entier ≥ 0 |
+| `DATE` | date valide (`Date.parse`) |
+| `SINGLE_CHOICE` | **exactement 1** option sélectionnée |
+| `MULTIPLE_CHOICE` | **au moins 1** option sélectionnée |
+
+> **Contrat « requis »** : une question **facultative** laissée vide est toujours acceptée
+> (court-circuit) ; une question **obligatoire** vide est rejetée. Les règles de format ci-dessus
+> ne s'appliquent qu'à une réponse effectivement renseignée.
+
+### DTO publics (`publicForm.ts`) — frontière de sécurité
+
+`PublicForm` / `PublicQuestion` / `PublicOption` décrivent la **sortie** servie au Responder.
+Ils n'exposent **jamais** l'`id` interne du `Form` (seul `publicId`), ni les champs admin
+(`aiPrompt`, `generatedByAi`, timestamps) ni les `formId`/`questionId` de structure — uniquement
+ce qui est nécessaire au remplissage. Voir [`security.md`](./security.md).
+
 ## Surface de données par acteur
 
 | Acteur | Lecture | Écriture |

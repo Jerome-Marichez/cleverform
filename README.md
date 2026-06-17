@@ -54,7 +54,13 @@ src/
   frontend/     # FRONTEND  — présentation : composants, hooks, vues
   backend/      # BACKEND   — métier : services, accès données (Prisma), intégration IA, session admin
   shared/       # PARTAGÉ   — domaine : entités, types, schémas Zod (framework-agnostic)
+    schemas/    #   schémas Zod & types inférés : CRUD Builder, soumission publique, login, DTO publics
 ```
+
+Les **schémas de validation** (Zod) vivent dans `src/shared/schemas/` (réexportés via
+`@/shared/schemas`) : entrées du Builder (`createFormSchema`, `updateFormSchema`, `reorderSchema`),
+soumission publique (`submitResponseSchema` + règles par type), connexion (`loginSchema`) et DTO
+publics (`PublicForm`, sans `id` interne). Détail et règles par type : [`docs/data-model.md`](./docs/data-model.md).
 
 ### Accès & sécurité
 
@@ -116,7 +122,7 @@ La documentation détaillée vit dans le dossier [`docs/`](./docs) :
 - [Storybook](./docs/storybook.md) — visualisation des composants, thème clair/sombre, conventions des stories.
 - [Modèle de données](./docs/data-model.md) — entités (`Form`, `Question`, `Response`, `Answer`) et relations.
 - [Sécurité & accès](./docs/security.md) — auth admin unique, cloisonnement admin/public, verrou IA, validation.
-- [Tests](./docs/testing.md) — stratégie unitaires / intégration / e2e-système.
+- [Tests](./docs/testing.md) — stratégie unitaires / intégration / e2e-système et couverture des composants.
 - [CI / CD](./docs/ci-cd.md) — CI à deux niveaux (dev rapide / main long) et déploiement.
 - [Docker](./docs/docker.md) — portabilité (anti vendor lock-in), build/run/disponibilité.
 - [Outillage (Make)](./docs/tooling.md) — interface de commandes agnostique.
