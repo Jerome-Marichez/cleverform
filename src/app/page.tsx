@@ -35,7 +35,7 @@ const FEATURES = [
   },
 ] as const;
 
-// Page d'accueil publique : présente CleverConnect et oriente vers l'espace
+// Page d'accueil publique : présente CleverForm et oriente vers l'espace
 // d'administration. Fond pointillé décoratif sur toute la hauteur, hero centré,
 // icônes animées et appels à l'action. Soignée, responsive et theme-aware.
 export default function Home() {
@@ -75,7 +75,7 @@ export default function Home() {
                 component="h1"
                 sx={{ fontWeight: 700, fontSize: { xs: "2.25rem", sm: "3rem" } }}
               >
-                CleverConnect
+                CleverForm
               </Typography>
               <Typography
                 variant="h6"

@@ -1,6 +1,6 @@
-# CleverConnect
+# CleverForm
 
-**Mini-clone de Typeform** (_Form Builder & Responder_) — cas pratique technique CleverConnect.
+**Mini-clone de Typeform** (_Form Builder & Responder_) — cas pratique technique CleverForm.
 
 Application web fullstack permettant de :
 

@@ -1,4 +1,4 @@
-// Modèle de données CleverConnect — voir docs/data-model.md
+// Modèle de données CleverForm — voir docs/data-model.md
 //
 // Frontière de sécurité (voir docs/security.md) :
 //  - `Form.id` est la clé interne : elle ne doit JAMAIS apparaître dans une URL publique.

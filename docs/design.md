@@ -27,7 +27,7 @@ Composants en **PascalCase** (`FormBuilder.tsx`, `QuestionCard.tsx`), hooks en *
 
 ## Page d'accueil
 
-La page d'accueil publique (`src/app/page.tsx`) présente CleverConnect et oriente vers l'espace admin : `AppHeader` (marque + bascule de thème), un hero centré « CleverConnect » avec un sous-titre décrivant le produit (créer, diffuser, visualiser des questionnaires, génération assistée par IA), trois fonctions clés illustrées par des **icônes animées**, et des appels à l'action vers `/admin`. Elle est responsive et **theme-aware** (clair / sombre).
+La page d'accueil publique (`src/app/page.tsx`) présente CleverForm et oriente vers l'espace admin : `AppHeader` (marque + bascule de thème), un hero centré « CleverForm » avec un sous-titre décrivant le produit (créer, diffuser, visualiser des questionnaires, génération assistée par IA), trois fonctions clés illustrées par des **icônes animées**, et des appels à l'action vers `/admin`. Elle est responsive et **theme-aware** (clair / sombre).
 
 ## Form Responder (remplissage public)
 

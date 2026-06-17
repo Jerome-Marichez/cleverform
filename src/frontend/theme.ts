@@ -1,6 +1,6 @@
 import { createTheme } from "@mui/material/styles";
 
-// Thème MUI centralisé de CleverConnect.
+// Thème MUI centralisé de CleverForm.
 //
 // - Couleur dominante : le **vert** de la marque (décliné en clair ET en sombre).
 // - Mode clair / sombre géré par variables CSS avec un **sélecteur de classe**

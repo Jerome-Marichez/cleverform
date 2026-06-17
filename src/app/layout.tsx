@@ -5,7 +5,7 @@ import "./globals.css";
 import { Providers } from "@/frontend/Providers";
 
 export const metadata: Metadata = {
-  title: "CleverConnect",
+  title: "CleverForm",
   description: "Mini-clone de Typeform — Form Builder & Responder",
 };
 
