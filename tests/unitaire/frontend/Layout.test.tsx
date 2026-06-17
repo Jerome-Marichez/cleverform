@@ -10,9 +10,9 @@ import { PageContainer } from "@/frontend/components/PageContainer";
 // Tests unitaires des composants de mise en page et de marque.
 
 describe("Logo (unitaire)", () => {
-  it("expose la marque CleverConnect comme image accessible", () => {
+  it("expose la marque CleverForm comme image accessible", () => {
     renderWithTheme(<Logo />);
-    expect(screen.getByRole("img", { name: "CleverConnect" })).toBeInTheDocument();
+    expect(screen.getByRole("img", { name: "CleverForm" })).toBeInTheDocument();
   });
 
   it("variante full : affiche le nom (Clever + Connect)", () => {
@@ -24,7 +24,7 @@ describe("Logo (unitaire)", () => {
   it("variante mark : n'affiche pas le texte du nom", () => {
     renderWithTheme(<Logo variant="mark" />);
     expect(screen.queryByText("Clever")).not.toBeInTheDocument();
-    expect(screen.getByRole("img", { name: "CleverConnect" })).toBeInTheDocument();
+    expect(screen.getByRole("img", { name: "CleverForm" })).toBeInTheDocument();
   });
 });
 
@@ -47,7 +47,7 @@ describe("ColorModeToggle (unitaire)", () => {
 describe("AppHeader (unitaire)", () => {
   it("affiche la marque (logo)", () => {
     renderWithTheme(<AppHeader />);
-    expect(screen.getByRole("img", { name: "CleverConnect" })).toBeInTheDocument();
+    expect(screen.getByRole("img", { name: "CleverForm" })).toBeInTheDocument();
   });
 
   it("rend les actions optionnelles quand elles sont fournies", () => {

@@ -21,7 +21,7 @@ jobs:
           docker run -d --name cc -p 3000:3000 \
             -e DATABASE_URL=postgresql://u:p@localhost:5432/db \
             -e DIRECT_URL=postgresql://u:p@localhost:5432/db \
-            cleverconnect
+            cleverform
           for i in $(seq 1 30); do
             if curl -fsS http://localhost:3000 >/dev/null; then echo "✅ App disponible"; exit 0; fi
             sleep 2

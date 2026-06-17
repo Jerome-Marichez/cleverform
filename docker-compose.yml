@@ -4,9 +4,9 @@ services:
   db:
     image: postgres:16-alpine
     environment:
-      POSTGRES_USER: cleverconnect
-      POSTGRES_PASSWORD: cleverconnect
-      POSTGRES_DB: cleverconnect
+      POSTGRES_USER: cleverform
+      POSTGRES_PASSWORD: cleverform
+      POSTGRES_DB: cleverform
     ports:
       - "5432:5432"
     volumes:
@@ -15,8 +15,8 @@ services:
   app:
     build: .
     environment:
-      DATABASE_URL: postgresql://cleverconnect:cleverconnect@db:5432/cleverconnect?sslmode=disable
-      DIRECT_URL: postgresql://cleverconnect:cleverconnect@db:5432/cleverconnect?sslmode=disable
+      DATABASE_URL: postgresql://cleverform:cleverform@db:5432/cleverform?sslmode=disable
+      DIRECT_URL: postgresql://cleverform:cleverform@db:5432/cleverform?sslmode=disable
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
     ports:
       - "3000:3000"
