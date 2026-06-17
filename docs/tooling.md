@@ -26,7 +26,11 @@ Le projet expose ses commandes via un **Makefile**, utilisé comme **interface u
 | `make test-unit` / `make test-integration` | Tests rapides **Jest** (PR → `dev`) |
 | `make test-e2e` / `make test-system` | Tests longs **Cypress** (PR → `main`) — serveur orchestré via `start-server-and-test` (`make build` préalable) |
 | `make docker-build` / `make docker-run` / `make docker-up` / `make docker-down` | Docker |
-| `make prisma-generate` / `make db-migrate` | Prisma |
+| `make prisma-generate` | Génère le client Prisma |
+| `make db-migrate` | Crée + applique une migration en dev (`prisma migrate dev`) |
+| `make db-deploy` | Applique les migrations existantes — preprod/prod/CI (`prisma migrate deploy`) |
+| `make db-status` | État des migrations vs base (`prisma migrate status`) |
+| `make db-pull` | Récupère les variables Vercel/Neon dans `.env.local` (`vercel env pull`) |
 
 `make help` affiche la liste complète.
 

@@ -9,7 +9,8 @@ PORT  ?= 3000
 .PHONY: help install ci-install dev build start lint typecheck \
         test-unit test-integration test-e2e test-system \
         storybook build-storybook \
-        prisma-generate db-migrate docker-build docker-run docker-up docker-down
+        prisma-generate db-migrate db-deploy db-status db-pull \
+        docker-build docker-run docker-up docker-down
 
 help: ## Affiche cette aide
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-18s\033[0m %s\n", $$1, $$2}'
@@ -56,8 +57,17 @@ build-storybook: ## Build statique de Storybook
 prisma-generate: ## Génère le client Prisma
 	npm run prisma:generate
 
-db-migrate: ## Applique les migrations Prisma
+db-migrate: ## Crée + applique une migration en dev (prisma migrate dev)
 	npm run db:migrate
+
+db-deploy: ## Applique les migrations existantes (preprod/prod/CI — prisma migrate deploy)
+	npm run db:deploy
+
+db-status: ## État des migrations vs base (prisma migrate status)
+	npm run db:status
+
+db-pull: ## Récupère les variables d'env Vercel/Neon dans .env.local (vercel env pull)
+	npm run db:pull-env
 
 docker-build: ## Construit l'image Docker
 	docker build -t $(IMAGE) .

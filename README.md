@@ -81,6 +81,8 @@ make install        # dépendances
 make dev            # développement local
 make build          # build de production
 make lint typecheck # qualité
+make db-deploy      # applique les migrations Prisma (preprod/prod/CI)
+make db-status      # état des migrations vs base
 make docker-up      # app + Postgres en local (Docker, compatibilité)
 make storybook      # visualisation des composants (Storybook, port 6006)
 make help           # liste toutes les cibles
@@ -88,6 +90,20 @@ make help           # liste toutes les cibles
 
 > Livraison via **Vercel** ; **Docker** sert la portabilité / les vérifications de compatibilité
 > (voir [`docs/docker.md`](./docs/docker.md)).
+
+## Base de données & configuration locale
+
+La base **PostgreSQL (Neon)** est provisionnée via l'**intégration Marketplace Vercel**. En local :
+
+1. `cp .env.example .env`, puis renseigner les **secrets applicatifs** (`ANTHROPIC_API_KEY`,
+   `ADMIN_PASSWORD`, `SESSION_SECRET`).
+2. `make db-pull` récupère les **variables Neon** dans `.env.local` (`vercel env pull`).
+3. `make db-deploy` applique les migrations, `make db-status` vérifie l'état.
+
+En **Prisma 7**, la connexion runtime passe par un *driver adapter* (`DATABASE_URL` poolée) et les
+migrations par l'URL **directe** (`DATABASE_URL_UNPOOLED`), configurées dans `prisma.config.ts`.
+Répartition **dev / preprod / prod** ↔ branches git : voir [`docs/architecture.md`](./docs/architecture.md) ;
+détail Prisma & migrations : [`docs/data-model.md`](./docs/data-model.md).
 
 ## Documentation
 
