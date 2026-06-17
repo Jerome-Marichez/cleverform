@@ -190,6 +190,7 @@ La documentation détaillée vit dans le dossier [`docs/`](./docs) :
 
 - [Architecture](./docs/architecture.md) — stack, structure, choix techniques et arbitrages.
 - [Design & UX](./docs/design.md) — parcours utilisateur, composants, états de l'interface.
+- [Accessibilité](./docs/accessibility.md) — clavier & focus visible, `prefers-reduced-motion`, contrastes, test axe.
 - [Storybook](./docs/storybook.md) — visualisation des composants, thème clair/sombre, conventions des stories.
 - [Modèle de données](./docs/data-model.md) — entités (`Form`, `Question`, `Response`, `Answer`) et relations.
 - [Sécurité & accès](./docs/security.md) — auth admin unique, cloisonnement admin/public, verrou IA, validation.
