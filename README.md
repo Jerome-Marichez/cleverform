@@ -184,6 +184,44 @@ détail Prisma & migrations : [`docs/data-model.md`](./docs/data-model.md).
 L'authentification admin (cookie de session signé HMAC, middleware sur `/admin/*` et `/api/admin/*`,
 page `/login`) repose sur `ADMIN_PASSWORD` et `SESSION_SECRET` — voir [`docs/security.md`](./docs/security.md).
 
+## Tests & couverture
+
+Pyramide complète, **frontend / backend séparés** par niveau (détail :
+[`docs/testing.md`](./docs/testing.md)) :
+
+| Niveau | Côté | Outil | Portée |
+|--------|------|-------|--------|
+| **unitaire** | front + back | Jest | composants, hooks, schémas Zod, mappers, logique pure |
+| **intégration** | back | Jest + **Postgres de test** | Route Handlers → services → Prisma (données réelles) |
+| **système** | back | Cypress (`cy.request`) | API de bout en bout via HTTP, **dont le chemin IA réel** (Anthropic) |
+| **e2e** | front | Cypress (navigateur) | parcours Builder / Responder / connexion admin |
+
+> Aucune **donnée métier mockée** : fixtures réelles et BDD de test dédiée (jamais
+> la base Neon de production). Les stubs se limitent aux **frontières** techniques
+> (navigation, `fetch`, presse-papier) en unitaire front, isolés et documentés.
+
+### Couverture (rapport du 2026-06-17)
+
+Mesurée par Jest sur **tout** `src/` (unitaire + intégration ; les niveaux
+système/e2e valident en plus le serveur et l'UI, hors instrumentation) :
+
+| Métrique | Couverture | Détail |
+|----------|-----------|--------|
+| **Statements** | **82,94 %** | 1493 / 1800 |
+| **Branches** | **77,16 %** | 517 / 670 |
+| **Functions** | **82,07 %** | 325 / 396 |
+| **Lines** | **83,89 %** | 1438 / 1714 |
+
+**454 tests Jest** (56 suites) au vert + parcours **système / e2e** Cypress.
+
+```bash
+make test-unit                       # unitaire (front + back)
+make test-db-up && make test-integration   # intégration (Postgres de test)
+make test-system    # système — API + chemin IA réel (serveur + BDD de test)
+make test-e2e       # e2e navigateur (serveur + BDD de test)
+npx jest --coverage --runInBand      # rapport de couverture (texte ; HTML via --coverageReporters=html)
+```
+
 ## Documentation
 
 La documentation détaillée vit dans le dossier [`docs/`](./docs) :

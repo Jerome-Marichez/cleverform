@@ -205,6 +205,7 @@ Parcours de bout en bout contre le **serveur réel** + middleware + BDD de test
 |-----------------|--------|-------|
 | `systeme/backend/health.cy.ts` | système | Santé de l'API (`/api/health`) |
 | `systeme/backend/form-api-flow.cy.ts` | système | Flux complet : login → création → publication → réponse → lecture ; 401 admin sans session ; 404 brouillon public |
+| `systeme/backend/ai-generate.cy.ts` | système | **Chemin IA réel** (Anthropic Haiku 4.5) : génération d'un questionnaire persisté + correction de texte ; assertions structurelles, skip propre si clé absente (503) |
 | `e2e/frontend/home.cy.ts` | e2e | Page d'accueil (titre `CleverForm`) |
 | `e2e/frontend/admin-login.cy.ts` | e2e | Connexion admin → dashboard ; mauvais mot de passe ; redirection d'une page protégée vers `/login` |
 | `e2e/frontend/responder-flow.cy.ts` | e2e | Remplissage d'un questionnaire publié → écran de remerciement ; blocage sans consentement RGPD |
