@@ -88,8 +88,10 @@ admin (`GET /api/admin/forms/[id]/responses`). Le mapping DTO et l'agrégation s
 
 La **page de remplissage** (`src/app/f/[publicId]`, Server Component) charge le DTO public côté
 serveur puis délègue à `ResponderForm` (React Hook Form + Zod, validation client par le **même**
-schéma que le backend). Soumission réussie → écran de remerciement ; questionnaire indisponible →
-page 404 dédiée. Voir [`docs/design.md`](./docs/design.md) (section _Form Responder_).
+schéma que le backend). Une **mention de confidentialité** et une **case de consentement
+obligatoire** (RGPD) précèdent l'envoi. Soumission réussie → écran de remerciement ; questionnaire
+indisponible → page 404 dédiée. Voir [`docs/design.md`](./docs/design.md) (section _Form Responder_)
+et [`docs/security.md`](./docs/security.md) (RGPD).
 
 Côté admin, le **Response Viewer** (`/admin/forms/[id]/responses`, Server Component) charge cet
 agrégat et le visualise par question — barres horizontales pour les choix, note moyenne pour les

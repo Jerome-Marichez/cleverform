@@ -139,6 +139,26 @@ n'existe pas de porte d'entrée publique à fermer.
 - **Prisma** (requêtes paramétrées) protège des injections SQL ; suppression en cascade
   (`onDelete: Cascade`) pour la cohérence.
 
+## 6. Données personnelles & RGPD (côté répondant)
+
+Le **Form Responder** est la seule surface qui collecte des données fournies par des tiers (les
+répondants), potentiellement personnelles (question de type `EMAIL`, champs texte libres).
+
+- **Minimisation** : une soumission ne stocke que `submittedAt` + les réponses (`Response` / `Answer`).
+  Aucune **adresse IP**, aucun **cookie**, aucun **traceur**, aucun **user-agent** n'est conservé pour
+  le public — seul l'admin dispose d'un cookie de session (essentiel, voir §1).
+- **Information (RGPD art. 13)** : une **mention de confidentialité** (`PrivacyNotice`) est affichée sur
+  la page de remplissage : responsable de traitement (**Ace Telecom**, contact `jerome@acetelecom.fr`),
+  finalité (exploiter le questionnaire), durée de conservation (**jusqu'à la suppression du
+  questionnaire** par l'admin) et droits (accès, rectification, effacement, opposition).
+- **Base légale = consentement** : une **case de consentement obligatoire** précède l'envoi. Tant
+  qu'elle n'est pas cochée, la soumission est bloquée côté client (verrou avant la validation des
+  champs).
+- **Droit à l'effacement** : la suppression d'un questionnaire efface en cascade ses réponses
+  (`onDelete: Cascade`).
+- **Limite assumée** : le consentement n'est **pas horodaté/persisté** (pas de preuve stockée) — il est
+  un prérequis bloquant à la soumission. À faire évoluer si une preuve de consentement est exigée.
+
 ## Limites assumées (hors périmètre)
 
 - Pas de multi-comptes ni de rôles (admin unique).
