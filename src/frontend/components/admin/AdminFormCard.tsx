@@ -9,6 +9,8 @@ import type { FormStatus } from "@/shared/schemas";
 
 export interface AdminFormCardProps {
   id: string;
+  /** Jeton opaque d'accès public (`/f/<publicId>`), pour partager le lien. */
+  publicId: string;
   title: string;
   description?: string | null;
   status: FormStatus;
@@ -21,6 +23,7 @@ export interface AdminFormCardProps {
 // coin supérieur droit. Composant client (navigation + interactions).
 export function AdminFormCard({
   id,
+  publicId,
   title,
   description,
   status,
@@ -40,7 +43,12 @@ export function AdminFormCard({
         onClick={() => router.push(`/admin/forms/${id}/edit`)}
       />
       <Box sx={{ position: "absolute", top: 8, right: 8 }}>
-        <FormCardActions id={id} title={title} status={status} />
+        <FormCardActions
+          id={id}
+          publicId={publicId}
+          title={title}
+          status={status}
+        />
       </Box>
     </Box>
   );

@@ -72,6 +72,7 @@ export default async function AdminDashboardPage() {
             <AdminFormCard
               key={form.id}
               id={form.id}
+              publicId={form.publicId}
               title={form.title}
               description={form.description}
               status={form.status}
