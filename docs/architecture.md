@@ -40,7 +40,7 @@ src/
     hooks/        #   hooks React (camelCase) : useFormBuilder.ts
 
   backend/        # BACKEND — couche application / métier
-    form/         #   formService.ts        (createForm, updateForm, publishForm…)
+    form/         #   formService.ts (orchestration) + formRepository.ts (Prisma) + formMapper.ts (règles pures)
     response/     #   responseService.ts    (submitResponse, listResponses…)
     ai/           #   aiService.ts          (génération Claude + parsing Zod) — appelable admin uniquement
     auth/         #   adminSession.ts       (création / vérification du cookie de session signé)
@@ -84,6 +84,35 @@ Application par couche :
 - **Form Responder** (`app/f/[publicId]` + `backend/response`) — interface publique de réponse. **Public.**
 - **Response Viewer** (`app/(admin)` + `backend/response`) — visualisation des réponses. **Admin.**
 - **Génération IA** (`app/api/admin/ai` + `backend/ai`) — création d'un questionnaire depuis un prompt. **Admin** (aucune route publique).
+
+## Couche Form (administration des questionnaires)
+
+La gestion des questionnaires côté admin est découpée en **trois sous-couches**
+(`src/backend/form/`), pour isoler la logique testable de l'accès aux données :
+
+| Fichier | Rôle | Dépend de la base ? |
+|---------|------|---------------------|
+| `formMapper.ts` | Transformations et **règles PURES** : attribution des `order`, construction de la forme de création imbriquée (`toCreateData`), extraction des champs scalaires d'une mise à jour, **transitions de statut** (`canPublish`, `canClose`, `canTransition`), réordonnancement (`applyReorder`). | **Non** (testé unitairement) |
+| `formRepository.ts` | Accès Prisma pur (CRUD `Form` + `Question` + `Option` imbriqués via `db`). Le remplacement des questions lors d'une mise à jour est **transactionnel** (suppression en cascade puis recréation). | Oui |
+| `formService.ts` | **Orchestration** : valide les entrées via les schémas partagés (`@/shared/schemas`), applique les règles du mapper, délègue au repository, lève des **erreurs métier typées** (`FormNotFoundError`, `InvalidStatusTransitionError`). | via le repository |
+
+Cycle de vie d'un questionnaire : `DRAFT → PUBLISHED → CLOSED` (transitions
+contrôlées, `CLOSED` terminal).
+
+### Routes API admin (`/api/admin/forms`)
+
+Route Handlers Next (sous `src/app/api/admin/`), protégés par `middleware.ts` ; la
+logique est **déléguée au service** et les erreurs traduites en codes HTTP
+(`formHttp.ts` : 400 validation Zod / 404 introuvable / 409 transition invalide / 500) :
+
+| Méthode & route | Action |
+|-----------------|--------|
+| `GET /api/admin/forms` | Liste les questionnaires. |
+| `POST /api/admin/forms` | Crée un questionnaire (body validé par `createFormSchema`) → 201. |
+| `GET /api/admin/forms/[id]` | Détail d'un questionnaire (questions/options triées par `order`). |
+| `PATCH /api/admin/forms/[id]` | Mise à jour (body validé par `updateFormSchema`). |
+| `DELETE /api/admin/forms/[id]` | Suppression (cascade questions/options/réponses) → 204. |
+| `PATCH`/`POST /api/admin/forms/[id]/publish` | Change le statut (publication / clôture) ; body optionnel `{ status }`, défaut `PUBLISHED`. |
 
 ## Sécurité & contrôle d'accès
 

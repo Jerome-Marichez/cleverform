@@ -53,6 +53,7 @@ src/
       public/   #   routes BACKEND publiques : lecture d'un form publié + soumission de réponses (write-only)
   frontend/     # FRONTEND  — présentation : composants, hooks, vues
   backend/      # BACKEND   — métier : services, accès données (Prisma), intégration IA, session admin
+    form/       #   formService (orchestration) + formRepository (Prisma) + formMapper (règles pures)
     response/   #   domaine Réponse : repository (Prisma), service (use-cases), mapper pur (DTO + agrégation)
   shared/       # PARTAGÉ   — domaine : entités, types, schémas Zod (framework-agnostic)
     schemas/    #   schémas Zod & types inférés : CRUD Builder, soumission publique, login, DTO publics
@@ -62,6 +63,10 @@ Les **schémas de validation** (Zod) vivent dans `src/shared/schemas/` (réexpor
 `@/shared/schemas`) : entrées du Builder (`createFormSchema`, `updateFormSchema`, `reorderSchema`),
 soumission publique (`submitResponseSchema` + règles par type), connexion (`loginSchema`) et DTO
 publics (`PublicForm`, sans `id` interne). Détail et règles par type : [`docs/data-model.md`](./docs/data-model.md).
+
+L'**administration des questionnaires** est exposée par les routes `/api/admin/forms`
+(CRUD + publication/clôture), adossées à la couche `backend/form` (service / repository / règles
+pures). Détail des routes et du découpage : [`docs/architecture.md`](./docs/architecture.md).
 
 Le **domaine Réponse** (`src/backend/response/`) sert un questionnaire publié au Responder
 (`GET /api/public/forms/[publicId]`), enregistre les soumissions validées
