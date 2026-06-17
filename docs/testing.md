@@ -106,6 +106,17 @@ npm test                # unitaire puis intégration (cette dernière en série)
 > En itération locale rapide, `npm run test:e2e` exécute Cypress contre un serveur déjà
 > démarré (ex. `make dev`).
 
+> **Pré-requis e2e / système** : le serveur doit pointer sur la **BDD de test**
+> (`make test-db-up`) et exposer un `ADMIN_PASSWORD` / `SESSION_SECRET` de test ; les
+> parcours seedent leurs données via l'API et s'authentifient avec
+> `CYPRESS_ADMIN_PASSWORD` (= `ADMIN_PASSWORD` du serveur). Exemple :
+> ```bash
+> DATABASE_URL=postgresql://test:test@localhost:55432/cleverform_test \
+> DIRECT_URL=$DATABASE_URL ADMIN_PASSWORD=test-admin-password \
+> SESSION_SECRET=test-secret CYPRESS_ADMIN_PASSWORD=test-admin-password \
+> npx start-server-and-test "npm run start" http://localhost:3000 "npm run test:e2e"
+> ```
+
 ## Couverture
 
 ### Composants frontend (unitaire)
@@ -184,6 +195,23 @@ aucun mock) :
 | `backend/ai-routes.test.ts` | Gardes des routes IA (`generate` / `proofread`) — 401 sans session, 400 corps invalide (sans appel Anthropic) |
 | `backend/auth-login.test.ts` | `POST /api/auth/login` — cookie de session signé, 401 / 400 |
 | `backend/system-routes.test.ts` | `GET /api/health`, `POST /api/auth/logout` |
+
+### Système (back, Cypress `cy.request`) & e2e (front, navigateur)
+
+Parcours de bout en bout contre le **serveur réel** + middleware + BDD de test
+(données seedées via l'API, jamais mockées) :
+
+| Fichier de test | Niveau | Objet |
+|-----------------|--------|-------|
+| `systeme/backend/health.cy.ts` | système | Santé de l'API (`/api/health`) |
+| `systeme/backend/form-api-flow.cy.ts` | système | Flux complet : login → création → publication → réponse → lecture ; 401 admin sans session ; 404 brouillon public |
+| `e2e/frontend/home.cy.ts` | e2e | Page d'accueil (titre `CleverForm`) |
+| `e2e/frontend/admin-login.cy.ts` | e2e | Connexion admin → dashboard ; mauvais mot de passe ; redirection d'une page protégée vers `/login` |
+| `e2e/frontend/responder-flow.cy.ts` | e2e | Remplissage d'un questionnaire publié → écran de remerciement ; blocage sans consentement RGPD |
+
+> Ces niveaux ne sont **pas** comptés dans la couverture Jest (ils valident le
+> serveur HTTP et l'UI navigateur, hors instrumentation de couverture). Ils
+> tournent en CI sur les **PR → `main`** (voir [`ci-cd.md`](./ci-cd.md)).
 
 ### Rapport de couverture
 
