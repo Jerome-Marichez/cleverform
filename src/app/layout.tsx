@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { AppRouterCacheProvider } from "@mui/material-nextjs/v16-appRouter";
 import "./globals.css";
 import { Providers } from "@/interface/Providers";
 
@@ -13,7 +14,10 @@ export default function RootLayout({
   return (
     <html lang="fr">
       <body>
-        <Providers>{children}</Providers>
+        {/* Cache Emotion pour le rendu SSR de MUI en App Router (boot sans FOUC). */}
+        <AppRouterCacheProvider options={{ key: "mui" }}>
+          <Providers>{children}</Providers>
+        </AppRouterCacheProvider>
       </body>
     </html>
   );
