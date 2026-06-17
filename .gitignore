@@ -24,6 +24,9 @@ secrets/
 *.key
 credentials*.json
 
+# Config MCP locale (assistant IA — non versionnée)
+.mcp.json
+
 # Tests (Cypress)
 /coverage
 cypress/videos/
