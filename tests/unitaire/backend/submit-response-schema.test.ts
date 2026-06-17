@@ -1,4 +1,7 @@
 import {
+  MAX_ANSWERS_PER_SUBMISSION,
+  MAX_SELECTED_OPTIONS,
+  MAX_VALUE_LENGTH,
   buildSubmitResponseSchema,
   submitResponseSchema,
   validateAnswerForType,
@@ -25,6 +28,42 @@ describe("submitResponseSchema (forme brute)", () => {
   it("rejette une réponse sans questionId", () => {
     const result = submitResponseSchema.safeParse({
       answers: [{ value: "x" }],
+    });
+    expect(result.success).toBe(false);
+  });
+});
+
+describe("submitResponseSchema (bornes anti-abus)", () => {
+  it("accepte une valeur à la limite de longueur", () => {
+    const result = submitResponseSchema.safeParse({
+      answers: [{ questionId: "q1", value: "a".repeat(MAX_VALUE_LENGTH) }],
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("rejette une valeur dépassant la limite de longueur", () => {
+    const result = submitResponseSchema.safeParse({
+      answers: [{ questionId: "q1", value: "a".repeat(MAX_VALUE_LENGTH + 1) }],
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejette une soumission avec trop de réponses", () => {
+    const answers = Array.from({ length: MAX_ANSWERS_PER_SUBMISSION + 1 }, (_, i) => ({
+      questionId: `q${i}`,
+      value: "x",
+    }));
+    const result = submitResponseSchema.safeParse({ answers });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejette une réponse avec trop d'options sélectionnées", () => {
+    const selectedOptionIds = Array.from(
+      { length: MAX_SELECTED_OPTIONS + 1 },
+      (_, i) => `opt${i}`,
+    );
+    const result = submitResponseSchema.safeParse({
+      answers: [{ questionId: "q1", selectedOptionIds }],
     });
     expect(result.success).toBe(false);
   });

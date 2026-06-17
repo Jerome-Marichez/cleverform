@@ -128,12 +128,15 @@ n'existe pas de porte d'entrée publique à fermer.
 - À la soumission : vérification que les questions `required` sont remplies, que les valeurs
   correspondent au `type`, et que les options sélectionnées **appartiennent bien** à la question
   ciblée du bon `Form` (pas d'injection d'`optionId` arbitraire).
+- **Tailles bornées** (surface publique anonyme) : la soumission est plafonnée pour éviter le
+  remplissage de la base / la saturation mémoire — longueur de `value`, nombre de réponses et nombre
+  d'options sélectionnées (constantes `MAX_*` de `src/shared/schemas/response.ts`). Un dépassement → **400**.
 - **Prisma** (requêtes paramétrées) protège des injections SQL ; suppression en cascade
   (`onDelete: Cascade`) pour la cohérence.
 
 ## Limites assumées (hors périmètre)
 
 - Pas de multi-comptes ni de rôles (admin unique).
-- Pas de **rate limiting** / anti-abus sur la soumission publique ni sur la génération IA
-  (à ajouter pour une mise en production réelle).
+- Pas de **rate limiting** sur la soumission publique ni sur la génération IA
+  (les tailles sont bornées, mais pas la fréquence des appels — à ajouter pour une mise en production réelle).
 - Pas de CAPTCHA ni de protection anti-spam sur le Responder public.
