@@ -25,6 +25,7 @@ import TextField from "@mui/material/TextField";
 import Button from "@mui/material/Button";
 import SaveIcon from "@mui/icons-material/SaveOutlined";
 import PublishIcon from "@mui/icons-material/PublishOutlined";
+import InsightsIcon from "@mui/icons-material/InsightsOutlined";
 import type { AlertColor } from "@mui/material/Alert";
 import type { FormStatus } from "@/shared/schemas/form";
 import { PageContainer } from "@/frontend/components/PageContainer";
@@ -196,6 +197,9 @@ export function FormBuilder({ formId, status, initialData }: FormBuilderProps) {
   }
 
   const canPublish = currentStatus === "DRAFT";
+  // Un brouillon n'a pas encore de réponses : l'accès n'a de sens qu'une fois
+  // le questionnaire publié (ou clôturé).
+  const hasResponses = currentStatus !== "DRAFT";
 
   return (
     <PageContainer>
@@ -212,6 +216,16 @@ export function FormBuilder({ formId, status, initialData }: FormBuilderProps) {
             <FormStatusChip status={currentStatus} />
           </Stack>
           <Stack direction="row" spacing={1.5}>
+            {hasResponses ? (
+              <Button
+                variant="text"
+                startIcon={<InsightsIcon />}
+                href={`/admin/forms/${formId}/responses`}
+                disabled={busy}
+              >
+                Voir les réponses
+              </Button>
+            ) : null}
             <Button
               variant="outlined"
               startIcon={<SaveIcon />}

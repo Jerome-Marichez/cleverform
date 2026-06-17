@@ -17,6 +17,7 @@ import Button from "@mui/material/Button";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
 import PublishIcon from "@mui/icons-material/PublishOutlined";
 import LockIcon from "@mui/icons-material/LockOutlined";
+import InsightsIcon from "@mui/icons-material/InsightsOutlined";
 import DeleteIcon from "@mui/icons-material/DeleteOutlineOutlined";
 import { StatusSnackbar } from "@/frontend/components/states/StatusSnackbar";
 import { useFormMutations } from "@/frontend/hooks/useFormMutations";
@@ -87,6 +88,11 @@ export function FormCardActions({ id, title, status }: FormCardActionsProps) {
     }
   };
 
+  const goToResponses = () => {
+    closeMenu();
+    router.push(`/admin/forms/${id}/responses`);
+  };
+
   const openConfirm = () => {
     closeMenu();
     setConfirmOpen(true);
@@ -137,7 +143,16 @@ export function FormCardActions({ id, title, status }: FormCardActionsProps) {
           </MenuItem>
         ) : null}
 
-        {status !== "CLOSED" ? <Divider /> : null}
+        {status !== "DRAFT" ? (
+          <MenuItem onClick={goToResponses}>
+            <ListItemIcon>
+              <InsightsIcon fontSize="small" />
+            </ListItemIcon>
+            <ListItemText>Voir les réponses</ListItemText>
+          </MenuItem>
+        ) : null}
+
+        <Divider />
 
         <MenuItem onClick={openConfirm} disabled={pending}>
           <ListItemIcon>
