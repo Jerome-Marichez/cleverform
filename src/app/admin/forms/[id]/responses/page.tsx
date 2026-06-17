@@ -60,7 +60,7 @@ export default async function ResponsesPage({
             <Button
               variant="outlined"
               startIcon={<EditOutlinedIcon />}
-              href={`/admin/forms/${id}`}
+              href={`/admin/forms/${id}/edit`}
             >
               Modifier le questionnaire
             </Button>

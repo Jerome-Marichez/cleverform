@@ -17,14 +17,20 @@ import Button from "@mui/material/Button";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
 import PublishIcon from "@mui/icons-material/PublishOutlined";
 import LockIcon from "@mui/icons-material/LockOutlined";
+import InsightsIcon from "@mui/icons-material/InsightsOutlined";
+import LinkIcon from "@mui/icons-material/LinkOutlined";
 import DeleteIcon from "@mui/icons-material/DeleteOutlineOutlined";
 import { StatusSnackbar } from "@/frontend/components/states/StatusSnackbar";
 import { useFormMutations } from "@/frontend/hooks/useFormMutations";
+import { useCopyToClipboard } from "@/frontend/hooks/useCopyToClipboard";
+import { buildPublicFormUrl } from "@/frontend/lib/publicFormUrl";
 import type { FormStatus } from "@/shared/schemas";
 
 export interface FormCardActionsProps {
   /** Identifiant interne du questionnaire. */
   id: string;
+  /** Jeton opaque d'accès public (`/f/<publicId>`), pour partager le lien. */
+  publicId: string;
   /** Titre affiché dans la confirmation de suppression. */
   title: string;
   /** Statut courant : conditionne les actions disponibles. */
@@ -41,9 +47,15 @@ interface Toast {
 //  - supprimer, avec confirmation explicite.
 // Après une mutation réussie, rafraîchit la liste (`router.refresh()`) et
 // confirme via un toast (`StatusSnackbar`). Les erreurs sont signalées de même.
-export function FormCardActions({ id, title, status }: FormCardActionsProps) {
+export function FormCardActions({
+  id,
+  publicId,
+  title,
+  status,
+}: FormCardActionsProps) {
   const router = useRouter();
   const { changeStatus, deleteForm, pending } = useFormMutations();
+  const { copy } = useCopyToClipboard();
 
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
   const [confirmOpen, setConfirmOpen] = React.useState(false);
@@ -73,6 +85,16 @@ export function FormCardActions({ id, title, status }: FormCardActionsProps) {
     }
   };
 
+  const handleCopyLink = async () => {
+    closeMenu();
+    const copied = await copy(buildPublicFormUrl(publicId));
+    setToast(
+      copied
+        ? { message: "Lien copié dans le presse-papier.", severity: "success" }
+        : { message: "Copie impossible. Copiez le lien manuellement.", severity: "error" },
+    );
+  };
+
   const handleClose = async () => {
     closeMenu();
     try {
@@ -85,6 +107,11 @@ export function FormCardActions({ id, title, status }: FormCardActionsProps) {
         severity: "error",
       });
     }
+  };
+
+  const goToResponses = () => {
+    closeMenu();
+    router.push(`/admin/forms/${id}/responses`);
   };
 
   const openConfirm = () => {
@@ -129,6 +156,15 @@ export function FormCardActions({ id, title, status }: FormCardActionsProps) {
         ) : null}
 
         {status === "PUBLISHED" ? (
+          <MenuItem onClick={handleCopyLink}>
+            <ListItemIcon>
+              <LinkIcon fontSize="small" />
+            </ListItemIcon>
+            <ListItemText>Copier le lien</ListItemText>
+          </MenuItem>
+        ) : null}
+
+        {status === "PUBLISHED" ? (
           <MenuItem onClick={handleClose} disabled={pending}>
             <ListItemIcon>
               <LockIcon fontSize="small" />
@@ -137,7 +173,16 @@ export function FormCardActions({ id, title, status }: FormCardActionsProps) {
           </MenuItem>
         ) : null}
 
-        {status !== "CLOSED" ? <Divider /> : null}
+        {status !== "DRAFT" ? (
+          <MenuItem onClick={goToResponses}>
+            <ListItemIcon>
+              <InsightsIcon fontSize="small" />
+            </ListItemIcon>
+            <ListItemText>Voir les réponses</ListItemText>
+          </MenuItem>
+        ) : null}
+
+        <Divider />
 
         <MenuItem onClick={openConfirm} disabled={pending}>
           <ListItemIcon>

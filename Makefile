@@ -3,7 +3,7 @@
 # quel que soit l'outillage sous-jacent et sans connaître l'écosystème Node.
 # `make` ou `make help` liste les cibles.
 
-IMAGE ?= cleverconnect
+IMAGE ?= cleverform
 PORT  ?= 3000
 
 .PHONY: help install ci-install dev build start lint typecheck \

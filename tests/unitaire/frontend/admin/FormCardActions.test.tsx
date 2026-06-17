@@ -8,9 +8,10 @@ import { FormCardActions } from "@/frontend/components/admin/FormCardActions";
 // (pas de DB ni d'HTTP réel) : on teste le COMPORTEMENT de présentation.
 
 const refresh = jest.fn();
+const push = jest.fn();
 
 jest.mock("next/navigation", () => ({
-  useRouter: () => ({ refresh }),
+  useRouter: () => ({ refresh, push }),
 }));
 
 function openMenu() {
@@ -22,12 +23,13 @@ function openMenu() {
 describe("FormCardActions (unitaire)", () => {
   beforeEach(() => {
     refresh.mockClear();
+    push.mockClear();
     global.fetch = jest.fn() as unknown as typeof fetch;
   });
 
   it("affiche le bouton d'ouverture du menu", () => {
     renderWithTheme(
-      <FormCardActions id="f1" title="Test" status="DRAFT" />,
+      <FormCardActions id="f1" publicId="pub1" title="Test" status="DRAFT" />,
     );
     expect(
       screen.getByRole("button", { name: "Actions du questionnaire" }),
@@ -36,7 +38,7 @@ describe("FormCardActions (unitaire)", () => {
 
   it("propose « Publier » pour un brouillon (DRAFT)", () => {
     renderWithTheme(
-      <FormCardActions id="f1" title="Test" status="DRAFT" />,
+      <FormCardActions id="f1" publicId="pub1" title="Test" status="DRAFT" />,
     );
     openMenu();
     expect(
@@ -49,7 +51,7 @@ describe("FormCardActions (unitaire)", () => {
 
   it("propose « Clôturer » pour un questionnaire publié (PUBLISHED)", () => {
     renderWithTheme(
-      <FormCardActions id="f1" title="Test" status="PUBLISHED" />,
+      <FormCardActions id="f1" publicId="pub1" title="Test" status="PUBLISHED" />,
     );
     openMenu();
     expect(
@@ -60,9 +62,65 @@ describe("FormCardActions (unitaire)", () => {
     ).not.toBeInTheDocument();
   });
 
+  it("ne propose pas « Voir les réponses » pour un brouillon (DRAFT)", () => {
+    renderWithTheme(
+      <FormCardActions id="f1" publicId="pub1" title="Test" status="DRAFT" />,
+    );
+    openMenu();
+    expect(
+      screen.queryByRole("menuitem", { name: /Voir les réponses/ }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("navigue vers les réponses depuis un questionnaire publié", () => {
+    renderWithTheme(
+      <FormCardActions id="f1" publicId="pub1" title="Test" status="PUBLISHED" />,
+    );
+    openMenu();
+    fireEvent.click(
+      screen.getByRole("menuitem", { name: /Voir les réponses/ }),
+    );
+    expect(push).toHaveBeenCalledWith("/admin/forms/f1/responses");
+  });
+
+  it("propose « Voir les réponses » pour un questionnaire clôturé (CLOSED)", () => {
+    renderWithTheme(
+      <FormCardActions id="f1" publicId="pub1" title="Test" status="CLOSED" />,
+    );
+    openMenu();
+    expect(
+      screen.getByRole("menuitem", { name: /Voir les réponses/ }),
+    ).toBeInTheDocument();
+  });
+
+  it("propose « Copier le lien » uniquement pour un questionnaire publié", () => {
+    renderWithTheme(
+      <FormCardActions id="f1" publicId="pub1" title="Test" status="DRAFT" />,
+    );
+    openMenu();
+    expect(
+      screen.queryByRole("menuitem", { name: /Copier le lien/ }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("copie l'URL publique absolue dans le presse-papier", async () => {
+    const writeText = jest.fn().mockResolvedValue(undefined);
+    Object.assign(navigator, { clipboard: { writeText } });
+
+    renderWithTheme(
+      <FormCardActions id="f1" publicId="pub1" title="Test" status="PUBLISHED" />,
+    );
+    openMenu();
+    fireEvent.click(screen.getByRole("menuitem", { name: /Copier le lien/ }));
+
+    await waitFor(() =>
+      expect(writeText).toHaveBeenCalledWith("http://localhost/f/pub1"),
+    );
+  });
+
   it("ne propose ni publier ni clôturer pour un questionnaire clôturé (CLOSED)", () => {
     renderWithTheme(
-      <FormCardActions id="f1" title="Test" status="CLOSED" />,
+      <FormCardActions id="f1" publicId="pub1" title="Test" status="CLOSED" />,
     );
     openMenu();
     expect(
@@ -78,7 +136,7 @@ describe("FormCardActions (unitaire)", () => {
 
   it("propose toujours la suppression", () => {
     renderWithTheme(
-      <FormCardActions id="f1" title="Test" status="DRAFT" />,
+      <FormCardActions id="f1" publicId="pub1" title="Test" status="DRAFT" />,
     );
     openMenu();
     expect(
@@ -88,7 +146,7 @@ describe("FormCardActions (unitaire)", () => {
 
   it("demande une confirmation avant de supprimer", async () => {
     renderWithTheme(
-      <FormCardActions id="f1" title="Mon questionnaire" status="DRAFT" />,
+      <FormCardActions id="f1" publicId="pub1" title="Mon questionnaire" status="DRAFT" />,
     );
     openMenu();
     fireEvent.click(screen.getByRole("menuitem", { name: /Supprimer/ }));
@@ -108,7 +166,7 @@ describe("FormCardActions (unitaire)", () => {
 
   it("annule la suppression sans appel réseau", async () => {
     renderWithTheme(
-      <FormCardActions id="f1" title="Test" status="DRAFT" />,
+      <FormCardActions id="f1" publicId="pub1" title="Test" status="DRAFT" />,
     );
     openMenu();
     fireEvent.click(screen.getByRole("menuitem", { name: /Supprimer/ }));
@@ -126,7 +184,7 @@ describe("FormCardActions (unitaire)", () => {
     (global.fetch as jest.Mock).mockResolvedValue({ ok: true });
 
     renderWithTheme(
-      <FormCardActions id="f1" title="Test" status="DRAFT" />,
+      <FormCardActions id="f1" publicId="pub1" title="Test" status="DRAFT" />,
     );
     openMenu();
     fireEvent.click(screen.getByRole("menuitem", { name: /Supprimer/ }));

@@ -12,7 +12,7 @@ export interface LogoProps {
   size?: number;
 }
 
-// Marque CleverConnect. Le pictogramme (coche dans un carré arrondi) et le nom
+// Marque CleverForm. Le pictogramme (coche dans un carré arrondi) et le nom
 // utilisent les couleurs du **thème** (variables CSS MUI) : ils s'adaptent donc
 // automatiquement au mode clair / sombre. Vert dominant.
 export function Logo({ variant = "full", size = 32 }: LogoProps) {
@@ -27,7 +27,7 @@ export function Logo({ variant = "full", size = 32 }: LogoProps) {
       component="svg"
       viewBox="0 0 32 32"
       role="img"
-      aria-label="CleverConnect"
+      aria-label="CleverForm"
       sx={{ width: size, height: size, flexShrink: 0 }}
     >
       <rect width="32" height="32" rx="8" fill={brand} />
@@ -55,7 +55,7 @@ export function Logo({ variant = "full", size = 32 }: LogoProps) {
           Clever
         </Box>
         <Box component="span" sx={{ color: "primary.main" }}>
-          Connect
+          Form
         </Box>
       </Typography>
     </Box>
