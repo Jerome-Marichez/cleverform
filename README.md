@@ -52,7 +52,13 @@ src/
   frontend/     # FRONTEND  — présentation : composants, hooks, vues
   backend/      # BACKEND   — métier : services, accès données (Prisma), intégration IA, session admin
   shared/       # PARTAGÉ   — domaine : entités, types, schémas Zod (framework-agnostic)
+    schemas/    #   schémas Zod & types inférés : CRUD Builder, soumission publique, login, DTO publics
 ```
+
+Les **schémas de validation** (Zod) vivent dans `src/shared/schemas/` (réexportés via
+`@/shared/schemas`) : entrées du Builder (`createFormSchema`, `updateFormSchema`, `reorderSchema`),
+soumission publique (`submitResponseSchema` + règles par type), connexion (`loginSchema`) et DTO
+publics (`PublicForm`, sans `id` interne). Détail et règles par type : [`docs/data-model.md`](./docs/data-model.md).
 
 ### Accès & sécurité
 
