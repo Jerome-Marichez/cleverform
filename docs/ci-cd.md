@@ -43,15 +43,24 @@ en local et en CI** (voir [`tooling.md`](./tooling.md)). `make ci-install` fait 
 - **Livraison via Vercel** (front + back serverless) + **PostgreSQL** (Neon). Docker n'est pas la
   cible de livraison (Vercel l'est) mais garantit la portabilité.
 - **Preview URL** par PR ; **production** sur `main`.
+- Le client **Prisma** est généré au build via le script **`postinstall`** (`prisma generate`),
+  afin que `next build` dispose des types générés (sans base requise à la génération).
 
 ### Variables d'environnement
 
-| Variable | Rôle |
-|----------|------|
-| `DATABASE_URL` | Connexion PostgreSQL **poolée** (runtime ; lue par le driver adapter Prisma) |
-| `DIRECT_URL` | Connexion **directe** (migrations) |
-| `ANTHROPIC_API_KEY` | Clé API Claude (serveur uniquement) |
-| `ADMIN_PASSWORD` / `SESSION_SECRET` | Authentification de l'espace admin (voir `security.md`) |
+La base **Neon** est provisionnée via l'**intégration Marketplace Vercel**, qui injecte
+automatiquement les variables de connexion dans les trois environnements (Production / Preview /
+Development) — voir la répartition par branche dans [`architecture.md`](./architecture.md).
+
+| Variable | Rôle | Source |
+|----------|------|--------|
+| `DATABASE_URL` | Connexion PostgreSQL **poolée** (runtime ; lue par le driver adapter Prisma) | Neon (auto) |
+| `DATABASE_URL_UNPOOLED` | Connexion **directe** (migrations Prisma) — alias accepté : `DIRECT_URL` | Neon (auto) |
+| `ANTHROPIC_API_KEY` | Clé API Claude (serveur uniquement) | à définir |
+| `ADMIN_PASSWORD` / `SESSION_SECRET` | Authentification de l'espace admin (voir `security.md`) | à définir |
+
+Les **migrations** sont appliquées avec `make db-deploy` (`prisma migrate deploy`) — sur la base
+de l'environnement ciblé — après mise à jour des variables.
 
 ## Outils
 

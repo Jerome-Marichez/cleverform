@@ -100,6 +100,26 @@ La séparation admin / public est posée sur la **couche d'accès**, pas sur le 
 
 Détail complet (validation des entrées, cookies, IA) : [`security.md`](./security.md).
 
+## Environnements (dev / preprod / prod)
+
+La base **Neon** est provisionnée via l'**intégration Marketplace Vercel** (elle injecte
+automatiquement `DATABASE_URL`, `DATABASE_URL_UNPOOLED`, etc. dans le projet). Les trois
+environnements s'alignent sur les **branches git** et les **environnements Vercel** :
+
+| Logique | Branche git | Environnement Vercel | Base |
+|---------|-------------|----------------------|------|
+| **prod** | `main` | **Production** | Neon (branche `production`) |
+| **preprod** | `dev` | **Preview** (limité à `dev`) | Neon (branche dédiée) |
+| **dev** (local) | local | **Development** (`.env.local`) | Neon (branche dédiée) |
+
+> « preprod » correspond à l'environnement **Preview** de Vercel (aucune option payante requise).
+> En local, `make db-pull` récupère les variables de l'environnement *Development* dans `.env.local`.
+> L'isolation **physique** par branche Neon par environnement (toggle *preview branching* de
+> l'intégration Neon) est activable ensuite ; à défaut, les environnements partagent la branche par défaut.
+
+Détail des variables et du flux de déploiement : [`ci-cd.md`](./ci-cd.md). Configuration Prisma
+et migrations : [`data-model.md`](./data-model.md).
+
 ## Choix, arbitrages et limites
 
 - **Prisma vs Drizzle** → Prisma, pour la lisibilité du schéma, les migrations carrées et le rendu à la démo.

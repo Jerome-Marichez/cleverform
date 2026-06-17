@@ -132,3 +132,34 @@ model Answer {
 
 Le public ne reçoit jamais l'`id` interne du `Form`, ni les `Response`/`Answer` d'autrui. Voir
 [`security.md`](./security.md).
+
+## Configuration Prisma 7 & migrations
+
+En **Prisma 7**, la `datasource` du schéma ne porte **plus** l'URL de connexion : le client
+runtime se connecte via un **driver adapter** (`@prisma/adapter-pg`, dans `src/backend/db.ts`),
+et le **CLI** (migrations) lit sa configuration dans **`prisma.config.ts`** (à la racine).
+
+### Deux connexions, deux usages
+
+| Variable | Connexion | Usage |
+|----------|-----------|-------|
+| `DATABASE_URL` | **poolée** (PgBouncer, hôte `...-pooler...`) | **runtime** serverless — lue par le driver adapter |
+| `DATABASE_URL_UNPOOLED` | **directe** (sans pooler) | **migrations** Prisma (CLI) — exposée ainsi par Neon ; `DIRECT_URL` est accepté comme alias |
+
+`prisma.config.ts` charge `.env` puis `.env.local` (priorité à ce dernier, géré par
+`vercel env pull`) et résout l'URL directe (`DIRECT_URL` sinon `DATABASE_URL_UNPOOLED`).
+
+### Cycle de migration
+
+```bash
+make db-migrate   # en dev : crée une migration depuis le schéma et l'applique (prisma migrate dev)
+make db-deploy    # en preprod/prod/CI : applique les migrations versionnées (prisma migrate deploy)
+make db-status    # vérifie l'état (migrations appliquées vs base)
+```
+
+Les migrations versionnées vivent dans `prisma/migrations/` (la migration initiale `0_init`
+crée les tables `Form` / `Question` / `Option` / `Response` / `Answer` et les enums).
+
+> Note : le driver `pg` émet un avertissement `sslmode` sur les URLs Neon (`sslmode=require`).
+> Non bloquant ; la connexion (TLS) fonctionne. Voir [`architecture.md`](./architecture.md) pour
+> la répartition par environnement (dev / preprod / prod).
