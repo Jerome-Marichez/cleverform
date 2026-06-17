@@ -3,6 +3,7 @@
 import * as React from "react";
 import dynamic from "next/dynamic";
 import Box from "@mui/material/Box";
+import { useReducedMotion } from "@/frontend/hooks/useReducedMotion";
 
 // Déclencheurs d'animation disponibles :
 // - "hover" : l'animation rejoue à chaque survol (idéal pour un appel à l'action) ;
@@ -40,6 +41,13 @@ export function LordIcon({
   trigger = "hover",
   label,
 }: LordIconProps) {
+  // Accessibilité : si l'utilisateur a demandé à réduire les animations, on ne
+  // laisse pas l'icône tourner en boucle. On retombe sur un déclenchement au
+  // survol (`hover`), volontaire et ponctuel, plutôt qu'une animation continue.
+  const reducedMotion = useReducedMotion();
+  const effectiveTrigger: LordIconTrigger =
+    reducedMotion && trigger === "loop" ? "hover" : trigger;
+
   return (
     <Box
       data-testid="lord-icon"
@@ -54,7 +62,7 @@ export function LordIcon({
         color: "primary.main",
       }}
     >
-      <LordIconPlayer icon={icon} size={size} trigger={trigger} />
+      <LordIconPlayer icon={icon} size={size} trigger={effectiveTrigger} />
     </Box>
   );
 }
