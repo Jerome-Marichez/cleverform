@@ -29,6 +29,17 @@ Composants en **PascalCase** (`FormBuilder.tsx`, `QuestionCard.tsx`), hooks en *
 
 La page d'accueil publique (`src/app/page.tsx`) présente CleverConnect et oriente vers l'espace admin : `AppHeader` (marque + bascule de thème), un hero centré « CleverConnect » avec un sous-titre décrivant le produit (créer, diffuser, visualiser des questionnaires, génération assistée par IA), trois fonctions clés illustrées par des **icônes animées**, et des appels à l'action vers `/admin`. Elle est responsive et **theme-aware** (clair / sombre).
 
+## Form Responder (remplissage public)
+
+La page de remplissage (`src/app/f/[publicId]/page.tsx`, Server Component) charge le **DTO public** du questionnaire publié via `getPublicForm(publicId)` — aucune donnée admin ni `id` interne n'est exposée. Un identifiant inexistant, en brouillon ou clos déclenche `notFound()` → écran neutre « Questionnaire indisponible » (`not-found.tsx`, basé sur `ErrorState`), sans révéler la cause exacte (cf. [`security.md`](./security.md)).
+
+Le remplissage proprement dit est délégué au Client Component `ResponderForm` (`src/frontend/components/responder/`) :
+
+- **React Hook Form + Zod** : un `AnswerInput` par question, validé côté client par le **même** schéma que le backend (`buildSubmitResponseSchema(form.questions)`) — règles par type (requis, e-mail, nombre, date, cardinalité des choix). Les erreurs s'affichent **inline** sous chaque question.
+- Chaque question est rendue par le dispatcher `QuestionField`. Le hook `useResponderForm` concentre la conversion **valeur d'affichage ⇄ `AnswerInput`** : les champs de choix manipulent des **libellés** d'options, reconvertis en **identifiants** (`selectedOptionIds`) pour le backend.
+- **Soumission** : `POST /api/public/forms/[publicId]/responses`. Succès → `ThankYouScreen` (écran de remerciement, le formulaire n'est pas rouvert — surface write-only). Échec → message d'erreur (les `issues` de validation serveur sont agrégées et affichées). Pendant l'envoi : barre de progression + bouton en état chargé, champs désactivés.
+- En-tête : titre et description du questionnaire ; mise en page cohérente (`AppHeader`, `PageContainer`, carte MUI), **theme-aware** (clair / sombre).
+
 ### Fond pointillé décoratif (`DottedBackground`)
 
 `src/frontend/components/DottedBackground.tsx` rend un **motif de points verts subtil** via un `radial-gradient` répété (`backgroundImage` + `backgroundSize`), sans image ni dépendance externe. La couleur des points dérive du **`secondary` du thème** (vert lime) appliqué à **faible opacité** — légèrement renforcée en mode sombre pour rester lisible : le motif est donc **theme-aware**. Un léger fondu vers les bords (`maskImage`) adoucit le rendu. La couche est purement décorative : `aria-hidden`, `pointerEvents: "none"`, positionnée **derrière** le contenu (`position: absolute`). Elle s'utilise soit en overlay (sans enfant), soit comme conteneur (le contenu est alors empilé au-dessus).
