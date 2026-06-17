@@ -148,7 +148,7 @@ répondants), potentiellement personnelles (question de type `EMAIL`, champs tex
   Aucune **adresse IP**, aucun **cookie**, aucun **traceur**, aucun **user-agent** n'est conservé pour
   le public — seul l'admin dispose d'un cookie de session (essentiel, voir §1).
 - **Information (RGPD art. 13)** : une **mention de confidentialité** (`PrivacyNotice`) est affichée sur
-  la page de remplissage : responsable de traitement (**Ace Telecom**, contact `jerome@acetelecom.fr`),
+  la page de remplissage : responsable de traitement (**Jérôme Marichez**, contact `jeromemarichez@ik.me`),
   finalité (exploiter le questionnaire), durée de conservation (**jusqu'à la suppression du
   questionnaire** par l'admin) et droits (accès, rectification, effacement, opposition).
 - **Base légale = consentement** : une **case de consentement obligatoire** précède l'envoi. Tant

@@ -13,7 +13,7 @@ import Typography from "@mui/material/Typography";
 // base légale (consentement), durée de conservation et droits du répondant.
 
 /** Adresse de contact du responsable de traitement. */
-const CONTACT_EMAIL = "jerome@acetelecom.fr";
+const CONTACT_EMAIL = "jeromemarichez@ik.me";
 
 export function PrivacyNotice() {
   return (
@@ -32,8 +32,8 @@ export function PrivacyNotice() {
         Confidentialité de vos réponses
       </Typography>
       <Typography variant="body2" color="text.secondary">
-        Vos réponses sont collectées par <strong>Ace Telecom</strong> (Jérôme
-        Marichez) dans le seul but d&apos;exploiter ce questionnaire. Elles sont
+        Vos réponses sont collectées par <strong>Jérôme Marichez</strong> dans le
+        seul but d&apos;exploiter ce questionnaire. Elles sont
         conservées jusqu&apos;à la suppression du questionnaire par son
         administrateur. Conformément au RGPD, vous disposez d&apos;un droit
         d&apos;accès, de rectification, d&apos;effacement et d&apos;opposition,

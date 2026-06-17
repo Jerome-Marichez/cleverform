@@ -175,7 +175,7 @@ describe("ResponderForm (unitaire)", () => {
     expect(
       screen.getByRole("region", { name: /confidentialité/i }),
     ).toBeInTheDocument();
-    expect(screen.getByText(/Ace Telecom/)).toBeInTheDocument();
+    expect(screen.getByText(/Jérôme Marichez/)).toBeInTheDocument();
   });
 
   it("bloque l'envoi sans consentement et n'appelle pas le réseau", async () => {
