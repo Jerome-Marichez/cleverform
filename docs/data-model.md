@@ -118,7 +118,7 @@ model Answer {
 - `Answer.value` stocke les réponses « scalaires » ; `Answer.selectedOptions` couvre les choix.
 - Suppression en cascade (`onDelete: Cascade`) pour garder la base cohérente.
 - La **génération IA** est un **mode de création** d'un `Form` (pas une entité à part) : elle produit
-  un objet validé par le schéma Zod `generatedFormSchema` (`src/core/schemas/form.ts`), inséré via Prisma
+  un objet validé par le schéma Zod `generatedFormSchema` (`src/shared/schemas/form.ts`), inséré via Prisma
   en `status = DRAFT` avec `generatedByAi = true` et `aiPrompt` renseigné. L'admin relit/édite puis publie.
 - Le `status` pilote la **visibilité publique** : `DRAFT` (en cours / brouillon IA) et `CLOSED`
   renvoient un 404 public ; seul `PUBLISHED` est servi sur `/f/[publicId]`.

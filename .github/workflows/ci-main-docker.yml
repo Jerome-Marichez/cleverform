@@ -2,8 +2,8 @@ name: CI main — Docker (build, run & disponibilité)
 
 # Check de mise en production (PR `dev` -> `main`) : vérifie que l'app
 # démarre hors écosystème Vercel (anti vendor lock-in). Construit l'image
-# (build standalone via DOCKER_BUILD=1 dans le Dockerfile), lance le conteneur
-# et vérifie sa disponibilité (curl sur `/`). Voir docs/docker.md.
+# (build standalone via DOCKER_BUILD=1 dans le Dockerfile) via `make docker-build`,
+# lance le conteneur et vérifie sa disponibilité (curl sur `/`). Voir docs/docker.md.
 on:
   pull_request:
     branches: [main]
@@ -15,7 +15,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Build de l'image
-        run: docker build -t cleverconnect .
+        run: make docker-build
       - name: Run + healthcheck
         run: |
           docker run -d --name cc -p 3000:3000 \

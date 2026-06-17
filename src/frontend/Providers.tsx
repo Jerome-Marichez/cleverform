@@ -2,7 +2,7 @@
 
 import { ThemeProvider } from "@mui/material/styles";
 import CssBaseline from "@mui/material/CssBaseline";
-import { theme } from "@/interface/theme";
+import { theme } from "@/frontend/theme";
 
 // Fournit le thème MUI à toute l'application (couche présentation).
 export function Providers({ children }: { children: React.ReactNode }) {

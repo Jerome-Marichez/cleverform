@@ -1,6 +1,7 @@
 name: CI main — Build local
 
 # Check de mise en production (PR `dev` -> `main`) : build local Next.js.
+# Commandes passées via Make (interface unique du projet — voir docs/tooling.md).
 on:
   pull_request:
     branches: [main]
@@ -15,6 +16,6 @@ jobs:
         with:
           node-version: 22
           cache: npm
-      - run: npm ci
-      - run: npx prisma generate
-      - run: npm run build
+      - run: make ci-install
+      - run: make prisma-generate
+      - run: make build

@@ -16,13 +16,13 @@ des responsabilités.
 | Formulaires & validation | **React Hook Form + Zod** | Formulaires agréables, gestion des erreurs ; Zod = validation partagée client/serveur. |
 | Drag & drop (builder) | **dnd-kit** | Réordonnancement des questions. |
 | IA | **Claude Haiku 4.5** (`@anthropic-ai/sdk`) | Rapide/économique pour itérer ; **sortie structurée validée par Zod** → résultat fiable et maîtrisé. |
-| Tests | **Cypress** | Outillage unique : Component Testing (composants), E2E (navigateur), tests API (`cy.request`). |
+| Tests | **Jest** + **Cypress** | Jest (SWC via `next/jest`) pour l'unitaire et l'intégration (front jsdom / back node) ; Cypress pour l'e2e (navigateur) et le système (API via `cy.request`). |
 | CI / CD | **GitHub Actions** + **Vercel** | Tests automatisés sur PR ; déploiement + preview URL. |
 
 ## Couches & séparation front / back
 
-Les dépendances pointent **vers le `core`** : `app` → (`interface` | `service`) → `core`.
-Le `core` ne dépend de rien (domaine pur, réutilisable côté front comme back).
+Les dépendances pointent **vers le `shared`** : `app` → (`frontend` | `backend`) → `shared`.
+Le `shared` ne dépend de rien (domaine pur, réutilisable côté front comme back).
 
 ```
 src/
@@ -35,18 +35,18 @@ src/
       admin/      #     Route Handlers PROTÉGÉS : génération IA, opérations builder
       public/     #     Route Handlers PUBLICS : soumission de réponses (write-only)
 
-  interface/      # FRONTEND — couche présentation
+  frontend/       # FRONTEND — couche présentation
     components/   #   composants UI (PascalCase) : FormBuilder.tsx, QuestionCard.tsx
     hooks/        #   hooks React (camelCase) : useFormBuilder.ts
 
-  service/        # BACKEND — couche application / métier
+  backend/        # BACKEND — couche application / métier
     form/         #   formService.ts        (createForm, updateForm, publishForm…)
     response/     #   responseService.ts    (submitResponse, listResponses…)
     ai/           #   aiService.ts          (génération Claude + parsing Zod) — appelable admin uniquement
     auth/         #   adminSession.ts       (création / vérification du cookie de session signé)
     db/           #   db.ts (client Prisma) + repositories
 
-  core/           # PARTAGÉ — couche domaine (framework-agnostic)
+  shared/         # PARTAGÉ — couche domaine (framework-agnostic)
     models/       #   entités / types du domaine (PascalCase) : Form.ts, Question.ts
     schemas/      #   schémas Zod (camelCase) : formSchema.ts, answerSchema.ts
     types/        #   types transverses
@@ -60,9 +60,9 @@ docs/             # documentation (ce dossier)
 | Dossier | Rôle | Côté |
 |---------|------|------|
 | `app/` | Points d'entrée Next.js (routing, RSC, Server Actions, Route Handlers) | front + back |
-| `interface/` | Présentation : composants, hooks, vues | **frontend** |
-| `service/` | Métier : services/use-cases, accès données Prisma, intégration IA | **backend** |
-| `core/` | Domaine : entités, types, schémas Zod, règles métier (sans dépendance framework) | **partagé** |
+| `frontend/` | Présentation : composants, hooks, vues | **frontend** |
+| `backend/` | Métier : services/use-cases, accès données Prisma, intégration IA | **backend** |
+| `shared/` | Domaine : entités, types, schémas Zod, règles métier (sans dépendance framework) | **partagé** |
 
 ## Conventions de nommage
 
@@ -70,20 +70,20 @@ docs/             # documentation (ce dossier)
 |---------|-------|---------|
 | Composants React, types, interfaces, enums, classes (+ leurs fichiers) | **PascalCase** | `FormBuilder.tsx`, `Question.ts`, `QuestionType` |
 | Variables, fonctions, hooks (+ fichiers non-composants) | **camelCase** | `formService.ts`, `useFormBuilder.ts`, `createForm()` |
-| Dossiers | **lowercase / kebab-case** | `service/`, `core/`, `form/` |
+| Dossiers | **lowercase / kebab-case** | `backend/`, `shared/`, `form/` |
 
 Application par couche :
 
-- **`core/`** — modèles/entités/enums en **PascalCase** (fichier `Form.ts`, type `Form`, enum `QuestionType`) ; schémas Zod en **camelCase** (fichier `formSchema.ts`, export `formSchema`).
-- **`service/`** — fichiers et fonctions en **camelCase** (`formService.ts` → `createForm()`, `aiService.ts` → `generateForm()`).
-- **`interface/`** — composants en **PascalCase** (`FormBuilder.tsx`, `QuestionCard.tsx`) ; hooks/utils en **camelCase** (`useFormState.ts`).
+- **`shared/`** — modèles/entités/enums en **PascalCase** (fichier `Form.ts`, type `Form`, enum `QuestionType`) ; schémas Zod en **camelCase** (fichier `formSchema.ts`, export `formSchema`).
+- **`backend/`** — fichiers et fonctions en **camelCase** (`formService.ts` → `createForm()`, `aiService.ts` → `generateForm()`).
+- **`frontend/`** — composants en **PascalCase** (`FormBuilder.tsx`, `QuestionCard.tsx`) ; hooks/utils en **camelCase** (`useFormState.ts`).
 
 ## Découpage fonctionnel
 
-- **Form Builder** (`app/(admin)` + `interface` + `service/form`) — conception des questionnaires. **Admin.**
-- **Form Responder** (`app/f/[publicId]` + `service/response`) — interface publique de réponse. **Public.**
-- **Response Viewer** (`app/(admin)` + `service/response`) — visualisation des réponses. **Admin.**
-- **Génération IA** (`app/api/admin/ai` + `service/ai`) — création d'un questionnaire depuis un prompt. **Admin** (aucune route publique).
+- **Form Builder** (`app/(admin)` + `frontend` + `backend/form`) — conception des questionnaires. **Admin.**
+- **Form Responder** (`app/f/[publicId]` + `backend/response`) — interface publique de réponse. **Public.**
+- **Response Viewer** (`app/(admin)` + `backend/response`) — visualisation des réponses. **Admin.**
+- **Génération IA** (`app/api/admin/ai` + `backend/ai`) — création d'un questionnaire depuis un prompt. **Admin** (aucune route publique).
 
 ## Sécurité & contrôle d'accès
 
