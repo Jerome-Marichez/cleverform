@@ -78,4 +78,39 @@ npm test                # = jest : unitaire + intégration en une seule passe
 
 ## Couverture
 
-> _À documenter : périmètre couvert, objectifs de couverture éventuels._
+### Composants frontend (unitaire)
+
+Chaque composant de présentation existant dispose d'un test unitaire ciblé
+(`tests/unitaire/frontend/`), monté dans le thème MUI via le helper
+`renderWithTheme` (enveloppe `ThemeProvider` + `CssBaseline`, mode clair). Ce
+helper évite les avertissements de contexte pour les composants consommant le
+thème (`useTheme`) ou le mode de couleur (`useColorScheme`, ex. la bascule de
+thème).
+
+Les tests vérifient un **comportement réel** plutôt que la couverture brute :
+valeur affichée, déclenchement de `onChange` / `onClick`, états `disabled`,
+`required` et `error`, dispatch par type, libellés et accessibilité (rôles et
+noms accessibles). Aucun mock : on passe des **props et fixtures réelles**.
+
+Périmètre couvert (regroupé par fichier de test) :
+
+| Fichier de test | Composants |
+|-----------------|------------|
+| `fields/TextFields.test.tsx` | `ShortTextField`, `LongTextField`, `NumberField`, `EmailField`, `DateField` |
+| `fields/ChoiceFields.test.tsx` | `SingleChoiceField`, `MultipleChoiceField`, `RatingField` |
+| `fields/QuestionField.test.tsx` | `QuestionField` (dispatch par type, libellé / marqueur requis, erreur inline) |
+| `form/FormCard.test.tsx` | `FormCard` (titre, description, compteur, statut, clic) |
+| `form/FormStatusChip.test.tsx` | `FormStatusChip` (`DRAFT` / `PUBLISHED` / `CLOSED`) |
+| `form/QuestionCard.test.tsx` | `QuestionCard` (libellé, type, ordre, badge obligatoire) |
+| `form/QuestionTypeIcon.test.tsx` | `QuestionTypeIcon` (libellé accessible par type) |
+| `states/States.test.tsx` | `LoadingState`, `ErrorState`, `EmptyState`, `StatusSnackbar` |
+| `Layout.test.tsx` | `AppHeader`, `Logo`, `ColorModeToggle`, `PageContainer` |
+
+### Logique partagée (unitaire, backend)
+
+| Fichier de test | Objet |
+|-----------------|-------|
+| `backend/form-schema.test.ts` | Validation Zod de la sortie IA (`generatedFormSchema`) |
+
+> Objectif de couverture : pas de seuil chiffré imposé pour l'instant ; la règle
+> est qu'**aucun composant ou logique pure ne reste sans test unitaire**.

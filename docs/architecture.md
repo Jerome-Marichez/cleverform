@@ -40,10 +40,10 @@ src/
     hooks/        #   hooks React (camelCase) : useFormBuilder.ts
 
   backend/        # BACKEND — couche application / métier
-    form/         #   formService.ts        (createForm, updateForm, publishForm…)
+    form/         #   formService.ts (orchestration) + formRepository.ts (Prisma) + formMapper.ts (règles pures)
     response/     #   responseService.ts    (submitResponse, listResponses…)
-    ai/           #   aiService.ts          (génération Claude + parsing Zod) — appelable admin uniquement
-    auth/         #   adminSession.ts       (création / vérification du cookie de session signé)
+    ai/           #   aiService.ts (orchestration) + aiClient.ts (réseau) + aiMapper.ts (parsing/validation Zod purs) — admin uniquement
+    auth/         #   adminSession.ts (cookie de session signé) + requireAdmin.ts (garde rejouée côté handler)
     db/           #   db.ts (client Prisma) + repositories
 
   shared/         # PARTAGÉ — couche domaine (framework-agnostic)
@@ -84,6 +84,78 @@ Application par couche :
 - **Form Responder** (`app/f/[publicId]` + `backend/response`) — interface publique de réponse. **Public.**
 - **Response Viewer** (`app/(admin)` + `backend/response`) — visualisation des réponses. **Admin.**
 - **Génération IA** (`app/api/admin/ai` + `backend/ai`) — création d'un questionnaire depuis un prompt. **Admin** (aucune route publique).
+
+## Couche Form (administration des questionnaires)
+
+La gestion des questionnaires côté admin est découpée en **trois sous-couches**
+(`src/backend/form/`), pour isoler la logique testable de l'accès aux données :
+
+| Fichier | Rôle | Dépend de la base ? |
+|---------|------|---------------------|
+| `formMapper.ts` | Transformations et **règles PURES** : attribution des `order`, construction de la forme de création imbriquée (`toCreateData`), extraction des champs scalaires d'une mise à jour, **transitions de statut** (`canPublish`, `canClose`, `canTransition`), réordonnancement (`applyReorder`). | **Non** (testé unitairement) |
+| `formRepository.ts` | Accès Prisma pur (CRUD `Form` + `Question` + `Option` imbriqués via `db`). Le remplacement des questions lors d'une mise à jour est **transactionnel** (suppression en cascade puis recréation). | Oui |
+| `formService.ts` | **Orchestration** : valide les entrées via les schémas partagés (`@/shared/schemas`), applique les règles du mapper, délègue au repository, lève des **erreurs métier typées** (`FormNotFoundError`, `InvalidStatusTransitionError`). | via le repository |
+
+Cycle de vie d'un questionnaire : `DRAFT → PUBLISHED → CLOSED` (transitions
+contrôlées, `CLOSED` terminal).
+
+### Routes API admin (`/api/admin/forms`)
+
+Route Handlers Next (sous `src/app/api/admin/`), protégés par `middleware.ts` ; la
+logique est **déléguée au service** et les erreurs traduites en codes HTTP
+(`formHttp.ts` : 400 validation Zod / 404 introuvable / 409 transition invalide / 500) :
+
+| Méthode & route | Action |
+|-----------------|--------|
+| `GET /api/admin/forms` | Liste les questionnaires. |
+| `POST /api/admin/forms` | Crée un questionnaire (body validé par `createFormSchema`) → 201. |
+| `GET /api/admin/forms/[id]` | Détail d'un questionnaire (questions/options triées par `order`). |
+| `PATCH /api/admin/forms/[id]` | Mise à jour (body validé par `updateFormSchema`). |
+| `DELETE /api/admin/forms/[id]` | Suppression (cascade questions/options/réponses) → 204. |
+| `PATCH`/`POST /api/admin/forms/[id]/publish` | Change le statut (publication / clôture) ; body optionnel `{ status }`, défaut `PUBLISHED`. |
+
+## Couche IA (assistance par IA — admin uniquement)
+
+L'assistance par IA (génération de questionnaire par prompt + correcteur
+orthographique) suit le **même découpage en sous-couches** que la couche Form,
+pour garder la logique exploitable **testable sans clé API, sans réseau et sans
+base** (contrainte CI : voir [`testing.md`](./testing.md)) :
+
+| Fichier (`src/backend/ai/`) | Rôle | Dépend du réseau / de la base ? |
+|---------|------|---------------------|
+| `aiMapper.ts` | Logique **PURE** : extraction du JSON de la réponse IA (tolère les fences ```` ```json ````), validation via `generatedFormSchema` (`extractGeneratedForm`), **mapping** `GeneratedForm → CreateFormInput` (`toCreateFormInput` : options `string[]` → objets `{ label, order }`, `order` séquentiels), nettoyage du texte corrigé (`cleanProofreadOutput`). | **Non** (testé unitairement par fixtures) |
+| `aiClient.ts` | Couche **réseau fine** : instancie le SDK Anthropic et émet la requête (`callClaude`). Lit `ANTHROPIC_API_KEY` côté serveur. **Non testée unitairement.** | Oui (réseau) |
+| `aiService.ts` | **Orchestration** : `generateForm(prompt)` (prompt système strict → `callClaude` → `extractGeneratedForm` → **un seul retry** si format invalide → `toCreateFormInput` → `createForm(..., { generatedByAi, aiPrompt })`) et `proofread(text)`. | via `aiClient` + `formService` |
+| `aiErrors.ts` / `aiHttp.ts` | Erreur typée `AiGenerationError` (sortie inexploitable) + traduction HTTP (`toAiErrorResponse`). | Non |
+
+> **Isolation testable, load-bearing.** `aiService.ts` importe transitivement
+> `formService → formRepository → db` (qui exige `DATABASE_URL` au chargement). La
+> logique pure vit donc dans `aiMapper.ts`, **sans** cette dépendance : les tests
+> unitaires importent `aiMapper.ts` directement et ne déclenchent jamais de
+> connexion Prisma ni d'appel réseau.
+
+> **Modèle utilisé : Claude Haiku 4.5** (`claude-haiku-4-5-20251001`) — on
+> privilégie une IA pertinente et **stable** (rapide, économique) ; la sortie
+> étant **contrainte par un schéma Zod**, basculer vers un modèle plus puissant
+> ne change qu'une constante.
+
+### Routes API IA (`/api/admin/ai`)
+
+Route Handlers protégés par `middleware.ts`, avec **vérification de session
+rejouée** dans le handler (`requireAdmin`, défense en profondeur — ces routes
+déclenchent un appel externe coûteux). Erreurs traduites par `aiHttp.ts` :
+401 (session) / 400 (entrée Zod) / **502** (l'IA renvoie un format inexploitable) /
+**503** (clé API absente) / 500.
+
+| Méthode & route | Action |
+|-----------------|--------|
+| `POST /api/admin/ai/generate` | Body `{ prompt }` → génère et persiste un questionnaire (origine `{ generatedByAi: true, aiPrompt }`) → 201. |
+| `POST /api/admin/ai/proofread` | Body `{ text }` → `{ corrected }` (texte corrigé). |
+
+Côté UI : un bouton « Générer par IA » (dashboard) ouvre une boîte de dialogue de
+prompt (avec exemples) puis redirige vers l'éditeur du questionnaire créé ; une
+action « Corriger l'orthographe » est proposée sur chaque libellé de question
+dans le Builder.
 
 ## Sécurité & contrôle d'accès
 

@@ -3,6 +3,9 @@ import { z } from "zod";
 // Schémas de domaine partagés (client + serveur). Servent notamment à valider
 // la sortie de la génération IA avant insertion en base. Voir docs/data-model.md.
 
+export const formStatusSchema = z.enum(["DRAFT", "PUBLISHED", "CLOSED"]);
+export type FormStatus = z.infer<typeof formStatusSchema>;
+
 export const questionTypeSchema = z.enum([
   "SHORT_TEXT",
   "LONG_TEXT",
