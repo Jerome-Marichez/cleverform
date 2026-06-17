@@ -10,6 +10,14 @@ jobs:
   tests:
     name: Tests unitaires & intégration
     runs-on: ubuntu-latest
+    # Secrets injectés depuis GitHub Actions (jamais codés en dur). Absents = chaînes
+    # vides : sans impact (tests sur fixtures, Prisma initialisé paresseusement).
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      DIRECT_URL: ${{ secrets.DATABASE_URL_UNPOOLED }}
+      ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
+      SESSION_SECRET: ${{ secrets.SESSION_SECRET }}
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4

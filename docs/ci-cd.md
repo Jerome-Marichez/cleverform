@@ -64,6 +64,20 @@ Development) — voir la répartition par branche dans [`architecture.md`](./arc
 Les **migrations** sont appliquées avec `make db-deploy` (`prisma migrate deploy`) — sur la base
 de l'environnement ciblé — après mise à jour des variables.
 
+### Secrets en CI (GitHub Actions)
+
+Aucune valeur sensible n'est **codée en dur** dans les workflows. Les variables sont injectées
+depuis les **GitHub Actions Secrets** via `${{ secrets.* }}` (bloc `env:` au niveau du job) :
+`DATABASE_URL`, `DATABASE_URL_UNPOOLED` (→ `DIRECT_URL`), `ADMIN_PASSWORD`, `SESSION_SECRET`,
+`ANTHROPIC_API_KEY`. Un secret **non défini** vaut une chaîne vide : sans impact sur la CI actuelle
+(tests sur **fixtures**, build sans base grâce à l'initialisation **paresseuse** de Prisma). Le
+smoke test **Docker** conserve un **repli** sur une URL factice si le secret est absent.
+
+Définition des secrets (par l'administrateur) : *Settings → Secrets and variables → Actions*, ou en
+CLI `gh secret set <NOM>`. Le fichier versionné **`.env.example`** ne contient **que des noms de
+variables, valeurs vides** — jamais de secret. Les valeurs réelles vivent dans `.env` / `.env.local`
+(gitignorés) en local, dans **Vercel** au runtime, et dans les **GitHub Secrets** pour la CI.
+
 ### Déploiements Preview & branches Neon
 
 Avec le **preview branching** activé (voir [`architecture.md`](./architecture.md)), chaque
