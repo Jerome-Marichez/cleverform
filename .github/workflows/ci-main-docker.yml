@@ -17,10 +17,15 @@ jobs:
       - name: Build de l'image
         run: make docker-build
       - name: Run + healthcheck
+        # Secrets injectés depuis GitHub Actions ; repli sur une URL factice si absents
+        # (le smoke test vérifie seulement que l'image démarre — Prisma est paresseux).
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          DIRECT_URL: ${{ secrets.DATABASE_URL_UNPOOLED }}
         run: |
           docker run -d --name cc -p 3000:3000 \
-            -e DATABASE_URL=postgresql://u:p@localhost:5432/db \
-            -e DIRECT_URL=postgresql://u:p@localhost:5432/db \
+            -e DATABASE_URL="${DATABASE_URL:-postgresql://u:p@localhost:5432/db}" \
+            -e DIRECT_URL="${DIRECT_URL:-postgresql://u:p@localhost:5432/db}" \
             cleverform
           for i in $(seq 1 30); do
             if curl -fsS http://localhost:3000 >/dev/null; then echo "✅ App disponible"; exit 0; fi
