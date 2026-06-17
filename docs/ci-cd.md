@@ -64,6 +64,19 @@ Development) — voir la répartition par branche dans [`architecture.md`](./arc
 Les **migrations** sont appliquées avec `make db-deploy` (`prisma migrate deploy`) — sur la base
 de l'environnement ciblé — après mise à jour des variables.
 
+### Déploiements Preview & branches Neon
+
+Avec le **preview branching** activé (voir [`architecture.md`](./architecture.md)), chaque
+déploiement **Preview** reçoit les variables de connexion de **sa** branche Neon, **injectées au
+déploiement via webhook** (elles surchargent les variables Preview du projet, le temps de ce
+déploiement, et ne sont pas visibles dans les réglages). La branche étant copiée depuis la prod,
+elle **hérite du schéma** — rien à faire pour la plupart des PR.
+
+> Pour une PR **introduisant une nouvelle migration**, la faire appliquer à la branche Preview en
+> définissant la *Build Command* Vercel sur `prisma migrate deploy && npm run build`
+> (Settings → Build and Deployment). Ne **pas** mettre `migrate deploy` dans le script npm `build` :
+> il casserait la CI et le build Docker, qui s'exécutent **sans base**.
+
 ## Outils
 
 | Étape | Outil |
