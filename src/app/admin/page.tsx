@@ -7,12 +7,13 @@ import { listForms } from "@/backend/form/formService";
 import { EmptyState } from "@/frontend/components/states/EmptyState";
 import { AdminFormCard } from "@/frontend/components/admin/AdminFormCard";
 import { NewFormButton } from "@/frontend/components/admin/NewFormButton";
+import { GenerateWithAiButton } from "@/frontend/components/admin/GenerateWithAiButton";
 
 // Tableau de bord administrateur (Server Component) : liste des questionnaires.
 //
 // La lecture des données se fait directement via `listForms()` (couche backend)
-// — pas d'appel HTTP côté serveur. Les interactions (création, publication,
-// clôture, suppression) sont déléguées à des composants clients dédiés.
+// — pas d'appel HTTP côté serveur. Les interactions (création, génération IA,
+// publication, clôture, suppression) sont déléguées à des composants clients.
 //
 // `dynamic = "force-dynamic"` : la liste doit refléter l'état courant de la base
 // (après création/suppression via `router.refresh()`), jamais une version mise
@@ -37,15 +38,23 @@ export default async function AdminDashboardPage() {
             Créez, publiez et gérez vos questionnaires.
           </Typography>
         </Stack>
-        <NewFormButton />
+        <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5}>
+          <GenerateWithAiButton />
+          <NewFormButton />
+        </Stack>
       </Stack>
 
       {forms.length === 0 ? (
         <EmptyState
           icon={<QuizIcon />}
           title="Aucun questionnaire pour le moment"
-          description="Commencez par créer votre premier questionnaire."
-          action={<NewFormButton label="Créer un questionnaire" />}
+          description="Créez votre premier questionnaire, ou laissez l'IA en générer un à partir d'un simple sujet."
+          action={
+            <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5}>
+              <GenerateWithAiButton />
+              <NewFormButton label="Créer un questionnaire" />
+            </Stack>
+          }
         />
       ) : (
         <Box
