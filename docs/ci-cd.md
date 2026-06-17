@@ -44,6 +44,12 @@ en local et en CI** (voir [`tooling.md`](./tooling.md)). `make ci-install` fait 
 > Les étapes Docker / e2e / système sont coûteuses : les cantonner aux PR vers `main` garde
 > les itérations sur `dev` rapides.
 
+> Les workflows `ci-main-e2e.yml` / `ci-main-system.yml` provisionnent eux aussi un
+> **service Postgres** : le serveur (`make build` + `npm run start`) tourne contre la
+> **BDD de test** (`DATABASE_URL` du service, schéma via `make test-db-prepare`), avec
+> un `ADMIN_PASSWORD` / `SESSION_SECRET` de test déterministes — **jamais** la base
+> Neon de production. Cypress s'authentifie via `CYPRESS_ADMIN_PASSWORD`.
+
 ## Déploiement (CD) — Vercel
 
 - **Livraison via Vercel** (front + back serverless) + **PostgreSQL** (Neon). Docker n'est pas la
