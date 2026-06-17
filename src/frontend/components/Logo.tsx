@@ -55,7 +55,7 @@ export function Logo({ variant = "full", size = 32 }: LogoProps) {
           Clever
         </Box>
         <Box component="span" sx={{ color: "primary.main" }}>
-          Connect
+          Form
         </Box>
       </Typography>
     </Box>

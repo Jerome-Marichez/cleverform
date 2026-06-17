@@ -15,10 +15,10 @@ describe("Logo (unitaire)", () => {
     expect(screen.getByRole("img", { name: "CleverForm" })).toBeInTheDocument();
   });
 
-  it("variante full : affiche le nom (Clever + Connect)", () => {
+  it("variante full : affiche le nom (Clever + Form)", () => {
     renderWithTheme(<Logo variant="full" />);
     expect(screen.getByText("Clever")).toBeInTheDocument();
-    expect(screen.getByText("Connect")).toBeInTheDocument();
+    expect(screen.getByText("Form")).toBeInTheDocument();
   });
 
   it("variante mark : n'affiche pas le texte du nom", () => {
