@@ -18,13 +18,22 @@ Le projet expose ses commandes via un **Makefile**, utilisé comme **interface u
 
 | Commande | Effet |
 |----------|-------|
-| `make install` | Installe les dépendances |
+| `make install` | Installe les dépendances (local, `npm install`) |
+| `make ci-install` | Installe les dépendances en mode reproductible (CI, `npm ci`) |
 | `make dev` | Serveur de développement (local) |
 | `make build` / `make start` | Build / démarrage production (local) |
 | `make lint` / `make typecheck` | Qualité |
-| `make test-unit` / `make test-integration` | Tests rapides (PR → `dev`) |
-| `make test-e2e` / `make test-system` | Tests longs (PR → `main`) |
+| `make test-unit` / `make test-integration` | Tests rapides **Jest** (PR → `dev`) |
+| `make test-e2e` / `make test-system` | Tests longs **Cypress** (PR → `main`) — serveur orchestré via `start-server-and-test` (`make build` préalable) |
 | `make docker-build` / `make docker-run` / `make docker-up` / `make docker-down` | Docker |
 | `make prisma-generate` / `make db-migrate` | Prisma |
 
 `make help` affiche la liste complète.
+
+## Make en CI/CD
+
+Les workflows GitHub Actions n'appellent **pas** `npm` / `docker` en direct : ils passent par
+les **mêmes cibles Make** que le poste local (`make ci-install`, `make prisma-generate`,
+`make lint`, `make typecheck`, `make test-unit`, `make test-integration`, `make build`,
+`make test-e2e`, `make test-system`, `make docker-build`). Une **seule interface** de
+commandes, identique en local et en intégration continue (voir [`ci-cd.md`](./ci-cd.md)).

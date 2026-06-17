@@ -1,6 +1,7 @@
 name: CI dev — Lint & types
 
 # Check rapide à chaque PR vers `dev` : lint (ESLint) + vérification des types (tsc).
+# Commandes passées via Make (interface unique du projet — voir docs/tooling.md).
 on:
   pull_request:
     branches: [dev]
@@ -15,7 +16,7 @@ jobs:
         with:
           node-version: 22
           cache: npm
-      - run: npm ci
-      - run: npx prisma generate
-      - run: npm run lint
-      - run: npm run typecheck
+      - run: make ci-install
+      - run: make prisma-generate
+      - run: make lint
+      - run: make typecheck

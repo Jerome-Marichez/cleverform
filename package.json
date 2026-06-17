@@ -10,8 +10,9 @@
     "typecheck": "tsc --noEmit",
     "prisma:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
-    "test:unit": "cypress run --e2e --spec 'tests/unitaire/**/*.cy.{ts,tsx}'",
-    "test:integration": "cypress run --e2e --spec 'tests/integration/**/*.cy.{ts,tsx}'",
+    "test": "jest",
+    "test:unit": "jest tests/unitaire",
+    "test:integration": "jest tests/integration",
     "test:e2e": "cypress run --e2e --spec 'tests/e2e/**/*.cy.{ts,tsx}'",
     "test:system": "cypress run --e2e --spec 'tests/systeme/**/*.cy.{ts,tsx}'",
     "cypress:open": "cypress open"
@@ -37,12 +38,18 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@testing-library/dom": "^10.4.1",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
+    "@types/jest": "^30.0.0",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "cypress": "^15.17.0",
     "eslint": "^9",
     "eslint-config-next": "16.2.9",
+    "jest": "^30.4.2",
+    "jest-environment-jsdom": "^30.4.1",
     "prisma": "^7.8.0",
     "start-server-and-test": "^3.0.11",
     "typescript": "^5"

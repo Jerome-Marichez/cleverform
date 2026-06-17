@@ -29,7 +29,7 @@ Application web fullstack permettant de :
 | Formulaires & validation | **React Hook Form + Zod** |
 | Drag & drop (builder) | **dnd-kit** |
 | IA | **Claude Haiku 4.5** (`@anthropic-ai/sdk`), sortie structurée validée Zod |
-| Tests | **Cypress** (Component + E2E + API) |
+| Tests | **Jest** (unitaire + intégration) + **Cypress** (e2e + système) |
 | CI / CD | **GitHub Actions** + **Vercel** |
 
 Détails et justifications : [`docs/architecture.md`](./docs/architecture.md).
@@ -37,7 +37,7 @@ Détails et justifications : [`docs/architecture.md`](./docs/architecture.md).
 ## Architecture
 
 Séparation claire **frontend / backend** (même dans cette application unique Next.js),
-en couches dépendant du `core` :
+en couches dépendant du `shared` :
 
 ```
 src/
@@ -48,9 +48,9 @@ src/
     api/
       admin/    #   routes BACKEND protégées : génération IA, opérations builder
       public/   #   routes BACKEND publiques : soumission de réponses (write-only)
-  interface/    # FRONTEND  — présentation : composants, hooks, vues
-  service/      # BACKEND   — métier : services, accès données (Prisma), intégration IA, session admin
-  core/         # PARTAGÉ   — domaine : entités, types, schémas Zod (framework-agnostic)
+  frontend/     # FRONTEND  — présentation : composants, hooks, vues
+  backend/      # BACKEND   — métier : services, accès données (Prisma), intégration IA, session admin
+  shared/       # PARTAGÉ   — domaine : entités, types, schémas Zod (framework-agnostic)
 ```
 
 ### Accès & sécurité
@@ -66,10 +66,10 @@ restant **write-only** sur les réponses. La génération IA n'a aucune route pu
 
 - **PascalCase** : composants React, types, interfaces, enums (+ leurs fichiers) — ex. `FormBuilder.tsx`, `QuestionType`.
 - **camelCase** : variables, fonctions, hooks (+ fichiers non-composants) — ex. `formService.ts`, `useFormBuilder.ts`.
-- **Dossiers** : minuscules — `service/`, `interface/`, `core/`.
+- **Dossiers** : minuscules — `backend/`, `frontend/`, `shared/`.
 
-Par couche : `core/` modèles/types en PascalCase + schémas Zod en camelCase ;
-`service/` fichiers/fonctions en camelCase ; `interface/` composants en PascalCase, hooks en camelCase.
+Par couche : `shared/` modèles/types en PascalCase + schémas Zod en camelCase ;
+`backend/` fichiers/fonctions en camelCase ; `frontend/` composants en PascalCase, hooks en camelCase.
 
 ## Commandes (Make)
 

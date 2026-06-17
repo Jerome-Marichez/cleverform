@@ -3,6 +3,6 @@
 // À remplacer par de vrais tests avec base de données de test + fixtures (pas de mocks).
 describe("intégration (placeholder)", () => {
   it("placeholder", () => {
-    expect(true).to.equal(true);
+    expect(true).toBe(true);
   });
 });

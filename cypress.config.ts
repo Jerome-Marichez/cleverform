@@ -1,10 +1,11 @@
 import { defineConfig } from "cypress";
 
-// Outil de test unique : Cypress. Les specs vivent dans tests/ (voir docs/testing.md).
+// Cypress couvre les niveaux e2e (front) et système (back) ; l'unitaire et
+// l'intégration sont gérés par Jest (.test.ts). Voir docs/testing.md.
 export default defineConfig({
   e2e: {
     baseUrl: "http://localhost:3000",
-    specPattern: "tests/**/*.cy.{ts,tsx}",
+    specPattern: "tests/{e2e,systeme}/**/*.cy.{ts,tsx}",
     supportFile: false,
     fixturesFolder: "tests/fixtures",
   },

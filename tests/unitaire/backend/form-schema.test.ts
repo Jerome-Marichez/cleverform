@@ -1,4 +1,4 @@
-import { generatedFormSchema } from "../../../src/core/schemas/form";
+import { generatedFormSchema } from "@/shared/schemas/form";
 
 // Test unitaire (backend) — logique pure : validation Zod de la sortie IA.
 describe("generatedFormSchema (unitaire)", () => {
@@ -7,11 +7,11 @@ describe("generatedFormSchema (unitaire)", () => {
       title: "Event IA",
       questions: [{ label: "Votre nom ?", type: "SHORT_TEXT" }],
     });
-    expect(result.success).to.equal(true);
+    expect(result.success).toBe(true);
   });
 
   it("rejette un questionnaire sans question", () => {
     const result = generatedFormSchema.safeParse({ title: "x", questions: [] });
-    expect(result.success).to.equal(false);
+    expect(result.success).toBe(false);
   });
 });
