@@ -66,5 +66,9 @@
     "start-server-and-test": "^3.0.11",
     "storybook": "^10.4.6",
     "typescript": "^5"
+  },
+  "overrides": {
+    "postcss": "^8.5.10",
+    "@hono/node-server": "^1.19.13"
   }
 }

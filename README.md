@@ -12,7 +12,7 @@ Application web fullstack permettant de :
 ## Contraintes techniques
 
 - **Next.js** (dernière version stable) — frontend + backend, **TypeScript** partout.
-- **Base de données** : MySQL, SQLite ou Supabase.
+- **Base de données** : **SQL** (MySQL, SQLite ou service type Supabase/PostgreSQL).
 - Bibliothèques tierces libres, **sauf** SDK de services de formulaires (Typeform & équivalents).
 
 ## Stack technique
@@ -39,7 +39,45 @@ Détails et justifications : [`docs/architecture.md`](./docs/architecture.md).
 ## Architecture
 
 Séparation claire **frontend / backend** (même dans cette application unique Next.js),
-en couches dépendant du `shared` :
+en couches dépendant du `shared`.
+
+**Vue d'ensemble** des flux entre frontend, backend, base de données et IA (cloisonnement
+public / admin par `middleware.ts`, surface publique write-only, clé IA côté serveur) :
+
+```mermaid
+flowchart TB
+    subgraph client["Frontend — Navigateur"]
+        public["Public · Form Responder<br/>/f/[publicId]"]
+        admin["Admin · Builder / Viewer / Génération IA<br/>/admin/*, /login"]
+    end
+
+    subgraph app["Application Next.js (App Router)"]
+        mw["middleware.ts<br/>garde /admin/* et /api/admin/*"]
+        apiPub["Route Handlers publics<br/>/api/forms, /api/responses"]
+        apiAdmin["Route Handlers admin (protégés)<br/>/api/admin/*, /api/admin/ai/*"]
+        subgraph back["Backend — src/backend"]
+            formSvc["formService"]
+            aiSvc["aiService → aiClient"]
+            repo["formRepository (Prisma)"]
+        end
+    end
+
+    db[("Base de données<br/>PostgreSQL (Neon)")]
+    claude{{"IA externe<br/>API Anthropic · Claude Haiku 4.5"}}
+
+    public -->|"lecture form publié · écriture réponses (write-only)"| apiPub
+    admin -->|"cookie de session signé (HMAC)"| mw
+    mw --> apiAdmin
+    apiPub --> formSvc
+    apiAdmin --> formSvc
+    apiAdmin --> aiSvc
+    formSvc --> repo
+    aiSvc --> formSvc
+    aiSvc -->|"ANTHROPIC_API_KEY (serveur)"| claude
+    repo --> db
+```
+
+**Structure des dossiers** :
 
 ```
 src/
@@ -107,7 +145,11 @@ d'**extraction et de validation** de la sortie du modèle est isolée dans une c
 — ce qui la rend **testable sans clé API ni réseau** (l'appel réseau reste isolé dans `aiClient.ts`).
 Côté UI, le dashboard propose un bouton **« Générer par IA »** (boîte de dialogue de prompt avec
 exemples, puis redirection vers l'éditeur du questionnaire créé) et le Builder une action
-**« Corriger l'orthographe »** sur chaque libellé de question. La clé `ANTHROPIC_API_KEY` reste
+**« Corriger l'orthographe »** sur chaque libellé de question. Le prompt de génération est **borné à
+1000 caractères** (côté serveur **et** UI), ce qui rend le **coût d'une génération déterministe et
+plafonné** : avec **Claude Haiku 4.5**, ~0,004 $ en usage réel (≤ ~0,042 $ au plafond absolu), soit
+**~3× moins cher que Sonnet 4.6 et ~5× moins cher qu'Opus 4.8** — détail et tableau comparatif dans
+[`docs/architecture.md`](./docs/architecture.md). La clé `ANTHROPIC_API_KEY` reste
 serveur, jamais exposée au client. Voir [`docs/architecture.md`](./docs/architecture.md) et
 [`docs/security.md`](./docs/security.md).
 
@@ -119,6 +161,8 @@ pas de table `User`). Le **Form Responder** est la seule surface publique : acc�
 **publié** via un **identifiant opaque** dans l'URL (`/f/[publicId]`, non devinable), le public
 restant **write-only** sur les réponses. La génération IA n'a aucune route publique. Le login admin
 est limité en débit par IP (anti-brute-force) et les soumissions publiques sont bornées en taille.
+Les dépendances sont auditées (`npm audit`) : **0 vulnérabilité critique/haute**, les résiduelles
+étant cantonnées à l'outillage de dev/build/test (jamais au runtime de production).
 Détails : [`docs/security.md`](./docs/security.md).
 
 ### RGPD — protection des données
@@ -238,6 +282,7 @@ La documentation détaillée vit dans le dossier [`docs/`](./docs) :
 - [Docker](./docs/docker.md) — portabilité (anti vendor lock-in), build/run/disponibilité.
 - [Outillage (Make)](./docs/tooling.md) — interface de commandes agnostique.
 - [Workflow Git](./docs/git-workflow.md) — branches, protection de `main`, cycle des PR.
+- [Bottlenecks & axes d'amélioration](./docs/ameliorations.md) — goulots (IA coût/latence, rate limiting, scalabilité des réponses, observabilité) et pistes proposées.
 
 ## Workflow Git
 

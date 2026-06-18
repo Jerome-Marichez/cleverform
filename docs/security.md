@@ -130,6 +130,9 @@ n'existe pas de porte d'entrée publique à fermer.
 - **Schémas Zod partagés** (`src/shared/schemas/`) appliqués **côté serveur** sur toute entrée :
   soumission publique de réponses, prompt de génération IA (`aiGenerateSchema`) et texte à corriger
   (`aiProofreadSchema`). La validation client n'est qu'un confort UX.
+- **Prompt IA borné** : le prompt de génération est limité à **1000 caractères**
+  (`MAX_AI_PROMPT_LENGTH`) — appliqué côté serveur **et** côté UI (`maxLength` + compteur). C'est à la
+  fois un garde-fou anti-abus et un **plafond de coût déterministe** (cf. [`architecture.md`](./architecture.md), § « Couche IA »).
 - À la soumission : vérification que les questions `required` sont remplies, que les valeurs
   correspondent au `type`, et que les options sélectionnées **appartiennent bien** à la question
   ciblée du bon `Form` (pas d'injection d'`optionId` arbitraire).
@@ -158,6 +161,23 @@ répondants), potentiellement personnelles (question de type `EMAIL`, champs tex
   (`onDelete: Cascade`).
 - **Limite assumée** : le consentement n'est **pas horodaté/persisté** (pas de preuve stockée) — il est
   un prérequis bloquant à la soumission. À faire évoluer si une preuve de consentement est exigée.
+
+## 7. Dépendances & `npm audit`
+
+La chaîne de dépendances est auditée avec `npm audit`. **Posture actuelle : 0 critique, 0 haute.**
+Les vulnérabilités résiduelles sont **toutes dans l'outillage de dev/build/test** — jamais dans le
+code exécuté en production (runtime servi aux utilisateurs).
+
+- **Corrigées** (vrais correctifs via le champ `overrides` de `package.json`, sans downgrade) :
+  - `postcss` → `^8.5.10` (XSS au _stringify_ CSS, tiré par `next` au build) ;
+  - `@hono/node-server` → `^1.19.13` (contournement de `serveStatic`, tiré par le **serveur de dev Prisma** `@prisma/dev`).
+- **Résiduelles assumées** (aucun correctif **sûr** ou **disponible**, surface nulle en production) :
+  - `elliptic` _(basse)_ via **Storybook** (polyfills webpack) — **aucune version corrigée publiée** à ce jour ; jamais chargé par l'application servie.
+  - `js-yaml` _(modérée, DoS par clés de fusion)_ via **Jest** (`@istanbuljs/load-nyc-config`) — le patch `4.x` casserait ce paquet qui dépend de l'API js-yaml **v3** ; la seule entrée parsée est **notre propre** config de couverture (surface d'attaque nulle).
+
+> Principe : la CI passe au vert **par un vrai correctif**, jamais en désactivant ou en truquant un
+> contrôle, et les « fix » de type _downgrade majeur_ proposés par `npm audit fix --force`
+> (rétrograder `next`, `jest`, `prisma`, `storybook`) sont **écartés** car ils réintroduiraient des régressions.
 
 ## Limites assumées (hors périmètre)
 

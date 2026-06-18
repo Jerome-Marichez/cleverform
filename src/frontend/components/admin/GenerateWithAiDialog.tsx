@@ -14,6 +14,7 @@ import Alert from "@mui/material/Alert";
 import Typography from "@mui/material/Typography";
 import AutoAwesomeIcon from "@mui/icons-material/AutoAwesome";
 import { useAiAssist } from "@/frontend/hooks/useAiAssist";
+import { MAX_AI_PROMPT_LENGTH } from "@/shared/schemas";
 
 export interface GenerateWithAiDialogProps {
   open: boolean;
@@ -80,7 +81,9 @@ function GenerateWithAiBody({ onClose }: { onClose: () => void }) {
             onBlur={() => setTouched(true)}
             error={promptError}
             helperText={
-              promptError ? "Le sujet du questionnaire est requis." : " "
+              promptError
+                ? "Le sujet du questionnaire est requis."
+                : `${prompt.length} / ${MAX_AI_PROMPT_LENGTH}`
             }
             autoFocus
             fullWidth
@@ -88,6 +91,7 @@ function GenerateWithAiBody({ onClose }: { onClose: () => void }) {
             multiline
             minRows={3}
             disabled={pending}
+            slotProps={{ htmlInput: { maxLength: MAX_AI_PROMPT_LENGTH } }}
           />
 
           <Stack spacing={1}>
