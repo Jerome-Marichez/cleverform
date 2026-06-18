@@ -282,7 +282,7 @@ La documentation détaillée vit dans le dossier [`docs/`](./docs) :
 - [Docker](./docs/docker.md) — portabilité (anti vendor lock-in), build/run/disponibilité.
 - [Outillage (Make)](./docs/tooling.md) — interface de commandes agnostique.
 - [Workflow Git](./docs/git-workflow.md) — branches, protection de `main`, cycle des PR.
-- [Bottlenecks & axes d'amélioration](./docs/ameliorations.md) — goulots (IA coût/latence, rate limiting, scalabilité des réponses, observabilité) et pistes proposées.
+- [Bottlenecks & axes d'amélioration](./docs/ameliorations.md) — goulots (IA coût/latence, rate limiting, scalabilité des réponses), **observabilité** (quasi inexistante hors Vercel → Sentry + alertes), **analytics produit** (Matomo : heatmaps, temps de complétion des formulaires), **déploiement & packaging** (monolithe vs découpage, Vercel/GCP/self-hosted, extraction npm) et pistes proposées.
 
 ## Workflow Git
 

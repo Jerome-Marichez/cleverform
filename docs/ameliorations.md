@@ -1,9 +1,10 @@
 # Bottlenecks & axes d'amélioration
 
 Ce document recense les principaux **goulots d'étranglement** (performance, coût,
-scalabilité) et les **axes d'amélioration** proposés pour la suite. Il complète —
-sans les dupliquer — les **« Limites assumées »** de [`security.md`](./security.md)
-et les arbitrages de [`architecture.md`](./architecture.md).
+scalabilité) et **axes d'amélioration** proposés pour la suite — du runtime IA à
+l'**observabilité**, à l'**analytics produit** et aux **arbitrages de déploiement /
+packaging**. Il complète — sans les dupliquer — les **« Limites assumées »** de
+[`security.md`](./security.md) et les arbitrages de [`architecture.md`](./architecture.md).
 
 > Cadre du projet : cas pratique technique, périmètre volontairement resserré.
 > Les points ci-dessous sont des **pistes assumées comme hors périmètre actuel**,
@@ -84,15 +85,43 @@ et les arbitrages de [`architecture.md`](./architecture.md).
 
 ## 5. Observabilité & exploitation
 
-**Manque**
-
-- Pas de **logging structuré**, de **métriques** ni d'**alerting** documentés (au-delà
-  des erreurs HTTP typées de l'IA : 502/503).
+**État actuel : quasi inexistant.** Il n'y a **aucune instrumentation applicative
+dédiée** — pas de logging structuré, pas de suivi d'erreurs, pas de métriques
+métier, pas d'alerting. La seule observabilité disponible est celle **fournie par
+défaut par la plateforme Vercel** (logs d'exécution des fonctions, analytics de
+base), non structurée et non corrélée au métier. Côté code, on s'appuie seulement
+sur les **erreurs HTTP typées** de l'IA (502/503) ; rien n'agrège ni n'alerte.
 
 **Axes d'amélioration**
 
-- 🟠 Logs structurés + monitoring (taux d'échec IA, latence de génération, erreurs
-  5xx) et un tableau de bord d'exploitation.
+- 🟠 **Logging structuré** (JSON) côté backend (génération IA, soumissions,
+  erreurs) avec corrélation par requête.
+- 🟠 **Suivi d'erreurs** front + back (ex. Sentry) et **métriques/traçage** (ex.
+  OpenTelemetry) : taux d'échec IA, latence de génération, erreurs 5xx.
+- 🟢 **Dashboards + alerting** sur les indicateurs clés. Le support concret dépend
+  de la cible de déploiement (voir § 8) : **Vercel Observability** en l'état, ou
+  **GCP Cloud Logging / Monitoring** (voire Prometheus/Grafana) en self-hosted.
+- 🟢 **Analytics produit (comportement utilisateur)** — concern **distinct** de
+  l'observabilité technique, **aujourd'hui inexistant** : aucune mesure des parcours
+  UI/UX. Un outil **respectueux de la vie privée comme Matomo** (auto-hébergeable,
+  configurable **sans cookie / IP anonymisée**) permettrait d'instrumenter
+  concrètement :
+  - **Heatmaps** (zones de clic / défilement) et **enregistrements de session** pour
+    voir où les utilisateurs bloquent sur le Builder et le Responder ;
+  - **Form Analytics** : **temps de complétion** d'un formulaire, **temps passé par
+    champ**, **champ qui déclenche l'abandon**, taux de conversion ;
+  - **entonnoirs (funnels) par question** pour localiser les décrochages, et suivi de
+    l'**efficacité de la génération IA** (prompts → questionnaires conservés).
+
+  Objectif : **éclairer les décisions UX par la donnée**, tout en restant cohérent avec
+  la **minimisation RGPD** du projet (voir [`rgpd.md`](./rgpd.md)) — Matomo permet une
+  configuration sans traceur intrusif.
+
+> **À terme, ce point devra être réellement traité** dès que l'application
+> dépassera le cadre de la démo. Piste recommandée : adopter **Sentry** (erreurs
+> front + back, avec contexte de release) et **configurer des alertes** sur les
+> signaux critiques (échecs IA 502/503, pic de latence de génération, taux d'erreur
+> 5xx) pour être notifié avant les utilisateurs.
 
 ## 6. Dépendances
 
@@ -106,3 +135,33 @@ et les arbitrages de [`architecture.md`](./architecture.md).
 - **Administrateur unique** (pas de multi-comptes ni de rôles) : choix volontaire et
   suffisant pour le périmètre. Évolutif vers une véritable **gestion d'utilisateurs**
   (table `User`, rôles, permissions) si le besoin apparaît.
+
+## 8. Architecture de déploiement & packaging (monolithe vs découpage)
+
+Ce n'est pas un défaut mais un **arbitrage assumé**, à réévaluer selon le contexte.
+
+- **Monolithe Next.js (choix actuel)** — front + back dans un seul projet. **Pertinent
+  pour ce cas pratique** : une seule CI, un seul déploiement, des **preview URLs**, une
+  itération rapide et surtout une **livraison / démonstration simples**. Pour démontrer
+  le produit, c'est le bon compromis (pas de surcoût d'orchestration).
+- **Cloud managé vs générique vs self-hosted** — déploiement actuel sur **Vercel**
+  (intégration Next.js native, preview URLs, observabilité de base). Un **Docker** est
+  déjà fourni (voir [`docker.md`](./docker.md)) précisément pour la **portabilité /
+  anti vendor lock-in** : l'app peut tourner ailleurs — **GCP Cloud Run**, un VPS,
+  Kubernetes — sans dépendre de Vercel. Le choix « **Vercel** (DX, time-to-market) vs
+  **GCP/Cloud Run** (contrôle, coût, intégration à une infra existante) vs
+  **self-hosted** » **dépend du contexte**, pas d'un dogme ; rien n'enferme puisque la
+  logique métier est framework-agnostique dans `shared`.
+- **Découpage & réutilisation** — tant que le code **n'est pas réutilisé ailleurs**, le
+  monolithe est optimal. **Si** un module devait servir dans d'autres projets, on
+  pourrait **l'extraire en package npm versionné** (ou en workspace monorepo) — par
+  exemple la **couche domaine** (`src/shared` : entités, schémas Zod, règles pures) ou
+  la **couche IA** (`src/backend/ai`). À l'inverse, un **découpage en services / front
+  et back séparés** ne se justifie que sous contraintes d'**échelle**, d'**équipes** ou
+  de **déploiements indépendants** — surcoût injustifié ici. L'architecture en couches
+  (`app` / `frontend` / `backend` / `shared`) rend cette extraction **future** peu
+  coûteuse **sans la payer maintenant**.
+
+> En résumé : **monolithe = simplicité / démo / livraison** ; **packaging npm =
+> réutilisation cross-projets** ; **Vercel vs GCP/self-hosted = DX vs contrôle**. Le bon
+> choix dépend du contexte (réutilisation, échelle, équipe, infra existante).
