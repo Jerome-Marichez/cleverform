@@ -107,7 +107,11 @@ d'**extraction et de validation** de la sortie du modèle est isolée dans une c
 — ce qui la rend **testable sans clé API ni réseau** (l'appel réseau reste isolé dans `aiClient.ts`).
 Côté UI, le dashboard propose un bouton **« Générer par IA »** (boîte de dialogue de prompt avec
 exemples, puis redirection vers l'éditeur du questionnaire créé) et le Builder une action
-**« Corriger l'orthographe »** sur chaque libellé de question. La clé `ANTHROPIC_API_KEY` reste
+**« Corriger l'orthographe »** sur chaque libellé de question. Le prompt de génération est **borné à
+1000 caractères** (côté serveur **et** UI), ce qui rend le **coût d'une génération déterministe et
+plafonné** : avec **Claude Haiku 4.5**, ~0,004 $ en usage réel (≤ ~0,042 $ au plafond absolu), soit
+**~3× moins cher que Sonnet 4.6 et ~5× moins cher qu'Opus 4.8** — détail et tableau comparatif dans
+[`docs/architecture.md`](./docs/architecture.md). La clé `ANTHROPIC_API_KEY` reste
 serveur, jamais exposée au client. Voir [`docs/architecture.md`](./docs/architecture.md) et
 [`docs/security.md`](./docs/security.md).
 
