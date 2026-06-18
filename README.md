@@ -119,6 +119,8 @@ pas de table `User`). Le **Form Responder** est la seule surface publique : acc�
 **publié** via un **identifiant opaque** dans l'URL (`/f/[publicId]`, non devinable), le public
 restant **write-only** sur les réponses. La génération IA n'a aucune route publique. Le login admin
 est limité en débit par IP (anti-brute-force) et les soumissions publiques sont bornées en taille.
+Les dépendances sont auditées (`npm audit`) : **0 vulnérabilité critique/haute**, les résiduelles
+étant cantonnées à l'outillage de dev/build/test (jamais au runtime de production).
 Détails : [`docs/security.md`](./docs/security.md).
 
 ### RGPD — protection des données
