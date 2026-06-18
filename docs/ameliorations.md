@@ -104,11 +104,18 @@ sur les **erreurs HTTP typées** de l'IA (502/503) ; rien n'agrège ni n'alerte.
 - 🟢 **Analytics produit (comportement utilisateur)** — concern **distinct** de
   l'observabilité technique, **aujourd'hui inexistant** : aucune mesure des parcours
   UI/UX. Un outil **respectueux de la vie privée comme Matomo** (auto-hébergeable,
-  configurable **sans cookie / IP anonymisée**) permettrait d'observer les
-  comportements (taux de **complétion / abandon** des formulaires, usage du Builder,
-  efficacité de la génération IA) pour **éclairer les futures décisions UX par la
-  donnée** — tout en restant cohérent avec la **minimisation RGPD** du projet (voir
-  [`rgpd.md`](./rgpd.md)).
+  configurable **sans cookie / IP anonymisée**) permettrait d'instrumenter
+  concrètement :
+  - **Heatmaps** (zones de clic / défilement) et **enregistrements de session** pour
+    voir où les utilisateurs bloquent sur le Builder et le Responder ;
+  - **Form Analytics** : **temps de complétion** d'un formulaire, **temps passé par
+    champ**, **champ qui déclenche l'abandon**, taux de conversion ;
+  - **entonnoirs (funnels) par question** pour localiser les décrochages, et suivi de
+    l'**efficacité de la génération IA** (prompts → questionnaires conservés).
+
+  Objectif : **éclairer les décisions UX par la donnée**, tout en restant cohérent avec
+  la **minimisation RGPD** du projet (voir [`rgpd.md`](./rgpd.md)) — Matomo permet une
+  configuration sans traceur intrusif.
 
 > **À terme, ce point devra être réellement traité** dès que l'application
 > dépassera le cadre de la démo. Piste recommandée : adopter **Sentry** (erreurs
