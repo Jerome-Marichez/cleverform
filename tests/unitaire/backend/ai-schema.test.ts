@@ -1,4 +1,8 @@
-import { aiGenerateSchema, aiProofreadSchema } from "@/shared/schemas";
+import {
+  aiGenerateSchema,
+  aiProofreadSchema,
+  MAX_AI_PROMPT_LENGTH,
+} from "@/shared/schemas";
 
 // Tests unitaires (backend) — schémas d'entrée de l'assistance IA. Vérifient la
 // validation des corps de requête (prompt / texte) sans aucun appel réseau.
@@ -17,9 +21,14 @@ describe("aiGenerateSchema (unitaire)", () => {
     expect(() => aiGenerateSchema.parse({})).toThrow();
   });
 
-  it("rejette un prompt trop long", () => {
+  it(`accepte un prompt à la borne (${MAX_AI_PROMPT_LENGTH} caractères)`, () => {
+    const prompt = "a".repeat(MAX_AI_PROMPT_LENGTH);
+    expect(aiGenerateSchema.parse({ prompt }).prompt).toBe(prompt);
+  });
+
+  it("rejette un prompt qui dépasse la borne d'un caractère", () => {
     expect(() =>
-      aiGenerateSchema.parse({ prompt: "a".repeat(2001) }),
+      aiGenerateSchema.parse({ prompt: "a".repeat(MAX_AI_PROMPT_LENGTH + 1) }),
     ).toThrow();
   });
 });

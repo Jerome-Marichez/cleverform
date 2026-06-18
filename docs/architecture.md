@@ -134,10 +134,34 @@ base** (contrainte CI : voir [`testing.md`](./testing.md)) :
 > unitaires importent `aiMapper.ts` directement et ne déclenchent jamais de
 > connexion Prisma ni d'appel réseau.
 
-> **Modèle utilisé : Claude Haiku 4.5** (`claude-haiku-4-5-20251001`) — on
-> privilégie une IA pertinente et **stable** (rapide, économique) ; la sortie
-> étant **contrainte par un schéma Zod**, basculer vers un modèle plus puissant
-> ne change qu'une constante.
+### Choix du modèle & coût maîtrisé
+
+**Modèle retenu : Claude Haiku 4.5** (`claude-haiku-4-5-20251001`, constante
+`AI_MODEL` dans `aiClient.ts`). On privilégie une IA **pertinente et stable**
+(rapide, économique) plutôt que sophistiquée mais instable (critère du projet) :
+la sortie étant **contrainte par un schéma Zod**, l'intelligence supplémentaire
+d'un modèle plus puissant n'apporterait rien — basculer ne change qu'une constante.
+
+**Borne du prompt = plafond de coût.** Le prompt de génération est borné à
+**1000 caractères** (`MAX_AI_PROMPT_LENGTH`, `src/shared/schemas/ai.ts`),
+appliqué **côté serveur** (validation Zod → 400) **et côté UI** (`maxLength` +
+compteur dans `GenerateWithAiDialog`). La sortie est plafonnée à
+`MAX_TOKENS = 4096`. Le coût d'une génération est donc **déterministe et borné**.
+
+Estimation (système ≈ 250 tokens ; prompt ≤ 1000 car. ≈ 350 tokens ;
+`generateForm` réessaie 1× → ×2 au pire ; tarifs par million de tokens
+entrée/sortie) :
+
+| Scénario | tokens in / out | **Haiku 4.5** ($1 / $5) | Sonnet 4.6 ($3 / $15) | Opus 4.8 ($5 / $25) |
+|----------|-----------------|-------------------------|------------------------|----------------------|
+| Réaliste (1 appel, form ~600 tok) | ~650 / ~600 | **~0,004 $** | ~0,011 $ | ~0,018 $ |
+| Plafond absolu (2 appels, sortie saturée) | ~1 300 / ~8 192 | **~0,042 $** | ~0,127 $ | ~0,211 $ |
+
+→ Haiku 4.5 est **~3× moins cher que Sonnet 4.6** et **~5× moins cher qu'Opus
+4.8**, à latence inférieure. Le coût étant dominé par la **sortie** (`MAX_TOKENS`)
+et le **retry**, la borne du prompt agit surtout comme garde-fou (anti-abus,
+plafond déterministe) ; réduire `MAX_TOKENS` serait le levier le plus efficace
+pour abaisser encore le plafond, au prix d'un risque de troncature — non retenu.
 
 ### Routes API IA (`/api/admin/ai`)
 

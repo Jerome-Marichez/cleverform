@@ -130,6 +130,9 @@ n'existe pas de porte d'entrée publique à fermer.
 - **Schémas Zod partagés** (`src/shared/schemas/`) appliqués **côté serveur** sur toute entrée :
   soumission publique de réponses, prompt de génération IA (`aiGenerateSchema`) et texte à corriger
   (`aiProofreadSchema`). La validation client n'est qu'un confort UX.
+- **Prompt IA borné** : le prompt de génération est limité à **1000 caractères**
+  (`MAX_AI_PROMPT_LENGTH`) — appliqué côté serveur **et** côté UI (`maxLength` + compteur). C'est à la
+  fois un garde-fou anti-abus et un **plafond de coût déterministe** (cf. [`architecture.md`](./architecture.md), § « Couche IA »).
 - À la soumission : vérification que les questions `required` sont remplies, que les valeurs
   correspondent au `type`, et que les options sélectionnées **appartiennent bien** à la question
   ciblée du bon `Form` (pas d'injection d'`optionId` arbitraire).

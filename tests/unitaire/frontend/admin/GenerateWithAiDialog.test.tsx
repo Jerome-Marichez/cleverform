@@ -2,6 +2,7 @@ import * as React from "react";
 import { screen, fireEvent } from "@testing-library/react";
 import { renderWithTheme } from "../renderWithTheme";
 import { GenerateWithAiDialog } from "@/frontend/components/admin/GenerateWithAiDialog";
+import { MAX_AI_PROMPT_LENGTH } from "@/shared/schemas";
 
 // Tests unitaires de GenerateWithAiDialog : rendu, validation du prompt requis et
 // fermeture. L'appel réseau (`fetch`) est stubé : on vérifie le COMPORTEMENT de
@@ -69,6 +70,23 @@ describe("GenerateWithAiDialog (unitaire)", () => {
     );
     // Le clic sur un exemple ne déclenche aucun appel réseau.
     expect(global.fetch).not.toHaveBeenCalled();
+  });
+
+  it(`borne réellement le champ à ${MAX_AI_PROMPT_LENGTH} caractères (maxLength)`, () => {
+    renderWithTheme(<GenerateWithAiDialog open onClose={() => {}} />);
+    const field = screen.getByLabelText(
+      /Sujet du questionnaire/,
+    ) as HTMLTextAreaElement;
+    expect(field.maxLength).toBe(MAX_AI_PROMPT_LENGTH);
+  });
+
+  it("affiche un compteur de caractères qui suit la saisie", () => {
+    renderWithTheme(<GenerateWithAiDialog open onClose={() => {}} />);
+    expect(screen.getByText(`0 / ${MAX_AI_PROMPT_LENGTH}`)).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText(/Sujet du questionnaire/), {
+      target: { value: "IA" },
+    });
+    expect(screen.getByText(`2 / ${MAX_AI_PROMPT_LENGTH}`)).toBeInTheDocument();
   });
 
   it("déclenche onClose au clic sur Annuler", () => {
