@@ -34,6 +34,42 @@ Le projet expose ses commandes via un **Makefile**, utilisé comme **interface u
 
 `make help` affiche la liste complète.
 
+## Assistant IA de développement (Claude Code)
+
+Le développement s'appuie aussi sur **Claude Code** (assistant IA d'Anthropic en ligne
+de commande) comme **outil d'aide au développement** : génération et refactorisation de
+code, rédaction de **tests** et de **documentation**, revue, et déroulé du **workflow Git**
+(issue → branche → Pull Request).
+
+### Niveau d'autonomie (système agent + branches)
+
+L'assistant opère selon le **modèle agent par branche** du projet (voir
+[`git-workflow.md`](./git-workflow.md)) : pour chaque tâche il **crée l'issue**, **dérive
+une branche** de `dev` (`feat/` · `fix/` · `doc/`…), **développe** (code + tests + doc),
+**ouvre la Pull Request** et **suit la CI**.
+
+- **Autonome jusqu'à `dev`** : dès que **tous les checks CI sont au vert**, l'assistant
+  **peut fusionner lui-même** la PR de la branche de fonctionnalité dans `dev`
+  (**auto-merge autorisé**) puis supprimer la branche.
+- **Non autonome sur la production** : pour `dev → main`, l'assistant **ouvre et remplit**
+  la PR mais **ne la fusionne jamais** — la mise en production est une **validation
+  humaine** (Jérôme), même avec tous les checks au vert.
+- **Branche `main` protégée** : aucun push direct, PR obligatoire, checks verts + revue ;
+  l'assistant **ne contourne pas** cette protection.
+
+Garde-fous — l'assistant **s'inscrit dans l'outillage existant, sans le contourner** :
+
+- il passe par les **mêmes cibles Make** (`make lint`, `make typecheck`, `make test-*`…)
+  que le poste local et la CI ;
+- tout le code produit franchit la **même CI** (lint, types, tests unitaires / intégration
+  / e2e / système) et la **même revue** avant fusion (voir [`ci-cd.md`](./ci-cd.md) et
+  [`git-workflow.md`](./git-workflow.md)) ;
+- il ne **désactive ni n'affaiblit** aucun test ni contrôle CI/CD ; la mise en production
+  (`dev → main`) reste une **validation humaine**.
+
+> L'assistant est un **accélérateur**, pas une autorité : les contrôles automatisés et la
+> revue humaine restent la source de vérité sur la qualité et la mise en production.
+
 ## Make en CI/CD
 
 Les workflows GitHub Actions n'appellent **pas** `npm` / `docker` en direct : ils passent par
