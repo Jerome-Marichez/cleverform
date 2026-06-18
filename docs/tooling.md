@@ -41,6 +41,22 @@ de commande) comme **outil d'aide au développement** : génération et refactor
 code, rédaction de **tests** et de **documentation**, revue, et déroulé du **workflow Git**
 (issue → branche → Pull Request).
 
+### Niveau d'autonomie (système agent + branches)
+
+L'assistant opère selon le **modèle agent par branche** du projet (voir
+[`git-workflow.md`](./git-workflow.md)) : pour chaque tâche il **crée l'issue**, **dérive
+une branche** de `dev` (`feat/` · `fix/` · `doc/`…), **développe** (code + tests + doc),
+**ouvre la Pull Request** et **suit la CI**.
+
+- **Autonome jusqu'à `dev`** : dès que **tous les checks CI sont au vert**, l'assistant
+  **peut fusionner lui-même** la PR de la branche de fonctionnalité dans `dev`
+  (**auto-merge autorisé**) puis supprimer la branche.
+- **Non autonome sur la production** : pour `dev → main`, l'assistant **ouvre et remplit**
+  la PR mais **ne la fusionne jamais** — la mise en production est une **validation
+  humaine** (Jérôme), même avec tous les checks au vert.
+- **Branche `main` protégée** : aucun push direct, PR obligatoire, checks verts + revue ;
+  l'assistant **ne contourne pas** cette protection.
+
 Garde-fous — l'assistant **s'inscrit dans l'outillage existant, sans le contourner** :
 
 - il passe par les **mêmes cibles Make** (`make lint`, `make typecheck`, `make test-*`…)
