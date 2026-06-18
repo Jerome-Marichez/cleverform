@@ -12,7 +12,7 @@ Application web fullstack permettant de :
 ## Contraintes techniques
 
 - **Next.js** (dernière version stable) — frontend + backend, **TypeScript** partout.
-- **Base de données** : MySQL, SQLite ou Supabase.
+- **Base de données** : **SQL** (MySQL, SQLite ou service type Supabase/PostgreSQL).
 - Bibliothèques tierces libres, **sauf** SDK de services de formulaires (Typeform & équivalents).
 
 ## Stack technique
@@ -39,7 +39,45 @@ Détails et justifications : [`docs/architecture.md`](./docs/architecture.md).
 ## Architecture
 
 Séparation claire **frontend / backend** (même dans cette application unique Next.js),
-en couches dépendant du `shared` :
+en couches dépendant du `shared`.
+
+**Vue d'ensemble** des flux entre frontend, backend, base de données et IA (cloisonnement
+public / admin par `middleware.ts`, surface publique write-only, clé IA côté serveur) :
+
+```mermaid
+flowchart TB
+    subgraph client["Frontend — Navigateur"]
+        public["Public · Form Responder<br/>/f/[publicId]"]
+        admin["Admin · Builder / Viewer / Génération IA<br/>/admin/*, /login"]
+    end
+
+    subgraph app["Application Next.js (App Router)"]
+        mw["middleware.ts<br/>garde /admin/* et /api/admin/*"]
+        apiPub["Route Handlers publics<br/>/api/forms, /api/responses"]
+        apiAdmin["Route Handlers admin (protégés)<br/>/api/admin/*, /api/admin/ai/*"]
+        subgraph back["Backend — src/backend"]
+            formSvc["formService"]
+            aiSvc["aiService → aiClient"]
+            repo["formRepository (Prisma)"]
+        end
+    end
+
+    db[("Base de données<br/>PostgreSQL (Neon)")]
+    claude{{"IA externe<br/>API Anthropic · Claude Haiku 4.5"}}
+
+    public -->|"lecture form publié · écriture réponses (write-only)"| apiPub
+    admin -->|"cookie de session signé (HMAC)"| mw
+    mw --> apiAdmin
+    apiPub --> formSvc
+    apiAdmin --> formSvc
+    apiAdmin --> aiSvc
+    formSvc --> repo
+    aiSvc --> formSvc
+    aiSvc -->|"ANTHROPIC_API_KEY (serveur)"| claude
+    repo --> db
+```
+
+**Structure des dossiers** :
 
 ```
 src/

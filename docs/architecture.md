@@ -4,6 +4,46 @@ Application web fullstack **Next.js** (App Router) en **TypeScript**, frontend e
 backend dans le même projet, structurée en **couches** pour une séparation claire
 des responsabilités.
 
+## Vue d'ensemble
+
+Flux entre le **frontend**, le **backend**, la **base de données** et l'**IA**. Le
+cloisonnement **public / admin** est posé sur la couche d'accès (`middleware.ts`) ;
+la surface publique est **write-only** sur les réponses, et la clé IA reste
+**côté serveur** uniquement.
+
+```mermaid
+flowchart TB
+    subgraph client["Frontend — Navigateur"]
+        public["Public · Form Responder<br/>/f/[publicId]"]
+        admin["Admin · Builder / Viewer / Génération IA<br/>/admin/*, /login"]
+    end
+
+    subgraph app["Application Next.js (App Router)"]
+        mw["middleware.ts<br/>garde /admin/* et /api/admin/*"]
+        apiPub["Route Handlers publics<br/>/api/forms, /api/responses"]
+        apiAdmin["Route Handlers admin (protégés)<br/>/api/admin/*, /api/admin/ai/*"]
+        subgraph back["Backend — src/backend"]
+            formSvc["formService"]
+            aiSvc["aiService → aiClient"]
+            repo["formRepository (Prisma)"]
+        end
+    end
+
+    db[("Base de données<br/>PostgreSQL (Neon)")]
+    claude{{"IA externe<br/>API Anthropic · Claude Haiku 4.5"}}
+
+    public -->|"lecture form publié · écriture réponses (write-only)"| apiPub
+    admin -->|"cookie de session signé (HMAC)"| mw
+    mw --> apiAdmin
+    apiPub --> formSvc
+    apiAdmin --> formSvc
+    apiAdmin --> aiSvc
+    formSvc --> repo
+    aiSvc --> formSvc
+    aiSvc -->|"ANTHROPIC_API_KEY (serveur)"| claude
+    repo --> db
+```
+
 ## Stack technique
 
 | Couche | Choix | Justification |
