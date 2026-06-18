@@ -159,6 +159,23 @@ répondants), potentiellement personnelles (question de type `EMAIL`, champs tex
 - **Limite assumée** : le consentement n'est **pas horodaté/persisté** (pas de preuve stockée) — il est
   un prérequis bloquant à la soumission. À faire évoluer si une preuve de consentement est exigée.
 
+## 7. Dépendances & `npm audit`
+
+La chaîne de dépendances est auditée avec `npm audit`. **Posture actuelle : 0 critique, 0 haute.**
+Les vulnérabilités résiduelles sont **toutes dans l'outillage de dev/build/test** — jamais dans le
+code exécuté en production (runtime servi aux utilisateurs).
+
+- **Corrigées** (vrais correctifs via le champ `overrides` de `package.json`, sans downgrade) :
+  - `postcss` → `^8.5.10` (XSS au _stringify_ CSS, tiré par `next` au build) ;
+  - `@hono/node-server` → `^1.19.13` (contournement de `serveStatic`, tiré par le **serveur de dev Prisma** `@prisma/dev`).
+- **Résiduelles assumées** (aucun correctif **sûr** ou **disponible**, surface nulle en production) :
+  - `elliptic` _(basse)_ via **Storybook** (polyfills webpack) — **aucune version corrigée publiée** à ce jour ; jamais chargé par l'application servie.
+  - `js-yaml` _(modérée, DoS par clés de fusion)_ via **Jest** (`@istanbuljs/load-nyc-config`) — le patch `4.x` casserait ce paquet qui dépend de l'API js-yaml **v3** ; la seule entrée parsée est **notre propre** config de couverture (surface d'attaque nulle).
+
+> Principe : la CI passe au vert **par un vrai correctif**, jamais en désactivant ou en truquant un
+> contrôle, et les « fix » de type _downgrade majeur_ proposés par `npm audit fix --force`
+> (rétrograder `next`, `jest`, `prisma`, `storybook`) sont **écartés** car ils réintroduiraient des régressions.
+
 ## Limites assumées (hors périmètre)
 
 - Pas de multi-comptes ni de rôles (admin unique).
